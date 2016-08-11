@@ -1,4 +1,5 @@
 #include "navigation_trajectory_planner/environment_navxythetalat_generic.h"
+#include "freespace_mechanism_heuristic/compute_heuristic.h"
 #include <geometry_msgs/PoseArray.h>
 #include <moveit/robot_state/conversions.h>
 #include <moveit_msgs/DisplayTrajectory.h>
@@ -10,31 +11,12 @@
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
 #include "timing/timing.h"
-
+#include <boost/make_shared.hpp>
 #include <boost/foreach.hpp>
 #define forEach BOOST_FOREACH
 
 EnvironmentNavXYThetaLatGeneric::EnvironmentNavXYThetaLatGeneric(ros::NodeHandle & nhPriv) : nhPriv_(nhPriv)
 {
-    std::string freespace_heuristic_costmap_file;
-    nhPriv.getParam("freespace_heuristic_costmap", freespace_heuristic_costmap_file);
-    if(freespace_heuristic_costmap_file.empty()) {
-        freespace_heuristic_costmap = NULL;
-        useFreespaceHeuristic_ = false;
-    } else {
-        ROS_INFO("Loading freespace costmap from %s and enabling useFreespaceHeuristic.",
-                freespace_heuristic_costmap_file.c_str());
-        // see HeuristicCostMap::getOutOfMapBehaviorFromString for values
-        std::string freespace_costmap_out_of_map_behavior;
-        nhPriv.param("freespace_costmap_out_of_map_behavior", freespace_costmap_out_of_map_behavior,
-                std::string("euclidean_append"));
-        freespace_heuristic_costmap = new freespace_mechanism_heuristic::HeuristicCostMap(
-                freespace_heuristic_costmap_file,
-                freespace_mechanism_heuristic::HeuristicCostMap::getOutOfMapBehaviorFromString(
-                    freespace_costmap_out_of_map_behavior));
-        useFreespaceHeuristic_ = true;
-    }
-
     timeFreespace = new Timing("freespace_heuristic", true, Timing::SP_STATS, false);
     timeHeuristic = new Timing("heuristic", true, Timing::SP_STATS, false);
 }
@@ -53,26 +35,80 @@ bool EnvironmentNavXYThetaLatGeneric::InitializeEnv(int width, int height, const
         double nominalvel_mpersecs, double timetoturn45degsinplace_secs,
         unsigned char obsthresh, const char* sMotPrimFile)
 {
-    if(freespace_heuristic_costmap != NULL) {
-        if(fabs(freespace_heuristic_costmap->getTransVelCellsPerSec() * cellsize_m - nominalvel_mpersecs) > 0.0001) {
-            ROS_ERROR("InitializeEnv called with different transvel from freespace_heuristic_costmap: "
-                    "freespace_heuristic_costmap: %f (%f cells/s) - provided %f",
-                    freespace_heuristic_costmap->getTransVelCellsPerSec() * cellsize_m,
-                    freespace_heuristic_costmap->getTransVelCellsPerSec(),
-                    nominalvel_mpersecs);
-        }
-        double fsTime = (M_PI/4.0)/freespace_heuristic_costmap->getRotVel();
-        if(fabs(fsTime - timetoturn45degsinplace_secs) > 0.0001) {
-            ROS_ERROR("InitializeEnv called with different time to turn 45 def from freespace_heuristic_costmap: "
-                    "freespace_heuristic_costmap: %f (rotvel: %f rad/s) - provided: %f", fsTime,
-                    freespace_heuristic_costmap->getRotVel(), timetoturn45degsinplace_secs);
-        }
+    std::string freespace_heuristic_costmap_file;
+    nhPriv_.getParam("freespace_heuristic_costmap", freespace_heuristic_costmap_file);
+	if (! freespace_heuristic_costmap_file.empty())
+	{
+		useFreespaceHeuristic_ = true;
+		bool heuristic_map_valid = true;
+		ROS_INFO("Loading freespace costmap from %s and enabling useFreespaceHeuristic.", freespace_heuristic_costmap_file.c_str());
+		// see HeuristicCostMap::getOutOfMapBehaviorFromString for values
+		std::string freespace_costmap_out_of_map_behavior;
+		nhPriv_.param("freespace_costmap_out_of_map_behavior", freespace_costmap_out_of_map_behavior, std::string("euclidean_append"));
+		freespace_mechanism_heuristic::HeuristicCostMap::OutOfMapBehavior behavior = freespace_mechanism_heuristic::HeuristicCostMap::getOutOfMapBehaviorFromString(freespace_costmap_out_of_map_behavior);
+		freespace_heuristic_costmap = boost::make_shared<freespace_mechanism_heuristic::HeuristicCostMap>(freespace_heuristic_costmap_file, behavior);
+		if (freespace_heuristic_costmap->getNumThetaDirs() == 0)
+		{
+			ROS_ERROR("freespace heuristic costmap failed to load.");
+			heuristic_map_valid = false;
+		}
+
+		double linear_velocity = freespace_heuristic_costmap->getTransVelCellsPerSec() * cellsize_m;
+		if (heuristic_map_valid & fabs(linear_velocity - nominalvel_mpersecs) > 0.0001)
+		{
+			ROS_ERROR("InitializeEnv: linear velocity mismatch: "
+					"freespace_heuristic_costmap: %f -- environment: %f",	linear_velocity, nominalvel_mpersecs);
+			heuristic_map_valid = false;
+		}
+		double angular_velocity = M_PI_4 / timetoturn45degsinplace_secs;
+		if (heuristic_map_valid & fabs(freespace_heuristic_costmap->getRotVel() - angular_velocity) > 0.0001)
+		{
+			ROS_ERROR("InitializeEnv: angular velocity mismatch: "
+					"freespace_heuristic_costmap: %f -- environment: %f", freespace_heuristic_costmap->getRotVel(), angular_velocity);
+			heuristic_map_valid = false;
+		}
+
+		if (! heuristic_map_valid)
+		{
+			ROS_WARN("freespace heuristic costmap INVALID. Re-computing heuristic map...");
+			int err_code = generateHeuristicMap(freespace_heuristic_costmap, sMotPrimFile, cellsize_m, nominalvel_mpersecs, angular_velocity);
+			if (err_code != 0)
+			{
+				ROS_ERROR("freespace heuristic costmap generation failed. Not using freespace heuristic");
+				freespace_heuristic_costmap.reset();
+				useFreespaceHeuristic_ = false;
+			}
+			else
+			{
+				ROS_INFO_STREAM("freespace heuristic costmap generation succeeded. Saving costmap to file "<<freespace_heuristic_costmap_file);
+				bool success = freespace_heuristic_costmap->saveCostMap(freespace_heuristic_costmap_file);
+				if (! success)
+				{
+					ROS_WARN_STREAM("map save failed. path: "<<freespace_heuristic_costmap_file);
+				}
+			}
+		}
     }
     return EnvironmentNAVXYTHETALAT::InitializeEnv(width, height, mapdata,
             startx, starty, starttheta, goalx, goaly, goaltheta,
             goaltol_x, goaltol_y, goaltol_theta, perimeterptsV,
             cellsize_m, nominalvel_mpersecs, timetoturn45degsinplace_secs,
             obsthresh, sMotPrimFile);
+}
+
+bool EnvironmentNavXYThetaLatGeneric::ReadMotionPrimitives(FILE* fMotPrim)
+{
+	char buf[1024];
+	std::vector<std::string> lines;
+	while (fgets(buf,1000, fMotPrim)!=NULL)
+	{
+		lines.push_back(buf);
+	}
+
+	PrimitivesFileIO primitivesReader;
+	primitivesReader.readPrimitives(lines, EnvNAVXYTHETALATCfg);
+
+	return true;
 }
 
 bool EnvironmentNavXYThetaLatGeneric::useFreespaceHeuristic(bool on)

@@ -104,6 +104,7 @@ catkin_package(
     timing
     visualization_msgs
     navigation_trajectory_msgs
+    navigation_trajectory_utils
   DEPENDS sbpl yaml-cpp
 )
 

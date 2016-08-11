@@ -40,17 +40,11 @@ const std::vector<int> * XYThetaStateChangeQuery::getSuccessors() const
 }
 
 NavigationTrajectoryPlanner::NavigationTrajectoryPlanner() :
-  initialized_(false), //costmap_ros_(NULL), 
+  initialized_(false), costmap_ros_(NULL), 
     initial_epsilon_(0),
     env_(NULL), force_scratch_limit_(0), planner_(NULL), allocated_time_(0)
 {
 }
-
-  /*NavigationTrajectoryPlanner::NavigationTrajectoryPlanner(std::string name, costmap_2d::Costmap2DROS* costmap_ros) :
-    initialized_(false), planner_(NULL), env_(NULL)//, costmap_ros_(NULL)
-{
-  initialize(name, costmap_ros);
-  }*/
 
 void NavigationTrajectoryPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros)
 {
@@ -59,7 +53,7 @@ void NavigationTrajectoryPlanner::initialize(std::string name, costmap_2d::Costm
 
     ROS_INFO("Planner Name is %s", name.c_str());
     private_nh_ = new ros::NodeHandle("~/" + name);
-    //costmap_ros_ = costmap_ros;
+    costmap_ros_ = costmap_ros;
 
     readDynamicParameters();
 
@@ -109,9 +103,9 @@ bool NavigationTrajectoryPlanner::createAndInitializeEnvironment()
     private_nh_->param("motion_primitive_filename", motion_primitive_filename, std::string(""));
     bool ret = true;
     try {
-        double timeToTurn45Degs = M_PI/4.0/rot_vel;
+        double timeToTurn45Degs = M_PI_4/rot_vel;
         ret = initializeEnvironment(trans_vel, timeToTurn45Degs, motion_primitive_filename);
-    } catch(SBPL_Exception& e) {
+    } catch(SBPL_Exception* e) {
         ROS_ERROR("SBPL encountered a fatal exception initializing the environment!");
         ret = false;
     }

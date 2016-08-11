@@ -10,6 +10,7 @@
 #include <moveit_msgs/DisplayTrajectory.h>
 #include <moveit/planning_scene/planning_scene.h>
 #include <ros/ros.h>
+#include <navigation_trajectory_utils/primitives_file_io.h>
 
 #include <cstdio>
 #include <vector>
@@ -41,6 +42,8 @@ class EnvironmentNavXYThetaLatGeneric : public EnvironmentNAVXYTHETALAT
                 const std::vector<sbpl_2Dpt_t>& perimeterptsV, double cellsize_m,
                 double nominalvel_mpersecs, double timetoturn45degsinplace_secs,
                 unsigned char obsthresh, const char* sMotPrimFile);
+
+        virtual bool ReadMotionPrimitives(FILE* fMotPrim);
 
         /// Returns the tf frame that this env assumes all poses to be in.
         virtual std::string getPlanningFrame() const = 0;
@@ -89,7 +92,7 @@ class EnvironmentNavXYThetaLatGeneric : public EnvironmentNAVXYTHETALAT
     protected:
         ros::NodeHandle nhPriv_;
 
-        freespace_mechanism_heuristic::HeuristicCostMap* freespace_heuristic_costmap;
+        freespace_mechanism_heuristic::HeuristicCostMapPtr freespace_heuristic_costmap;
         bool useFreespaceHeuristic_;
 
         Timing* timeFreespace;
