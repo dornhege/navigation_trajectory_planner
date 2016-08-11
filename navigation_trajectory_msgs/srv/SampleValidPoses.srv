@@ -1,0 +1,4 @@
+uint32 n            # number of poses to sample
+uint32 max_tries    # stop after this, even if poses are less than n
+---
+geometry_msgs/PoseArray poses
