@@ -140,25 +140,34 @@ public:
     }
     runs.resize(numRuns, run);
 
-    std::vector<std::vector<std::string>::const_iterator> it;
+    std::vector<std::vector<std::string>::const_iterator> it(paramNames.size());
     for(size_t i = 0; i < paramNames.size(); ++i){
       it[i] = paramValues[i].begin();
     }
 
     std::vector<std::vector<std::string> > paramCombinations(numRuns);
     int count = 0;
-    while(it[0] != paramValues[0].end()){
-      ++it[paramNames.size()-1];
-      for(int i = (int)paramNames.size()-1; (i > 0) && (it[i] == paramValues[i].end()); --i){
-        for(size_t p = 0; p < paramNames.size(); ++p){
-          paramCombinations[count].push_back(*it[p]);
+    while(count != numRuns){
+      for(size_t p = 0; p < paramNames.size(); ++p){
+        paramCombinations[count].push_back(*(it[p]));
+      }
+      count++;
+
+      for(int currentParam = 0; ; ){
+        ++it[currentParam];
+        if(it[currentParam] == paramValues[currentParam].end()){
+          if(currentParam == paramValues.size()){
+            goto useCombinations;
+          }
+          it[currentParam] = paramValues[currentParam].begin();
+          currentParam++;
+        }else{
+          break;
         }
-        count++;
-        it[i] = paramValues[i].begin();
-        ++it[i-1];
       }
     }
 
+  useCombinations:
     for(size_t r = 0; r < numRuns; ++r){
       for(size_t i = 0; i < paramNames.size(); ++i){
         const std::string & paramStr = paramCombinations[r][i];
@@ -180,6 +189,7 @@ public:
         }
       }
     }
+    std::cout << "got " << numRuns << " runs" << std::endl;
     return runs;
   }
 };
@@ -217,6 +227,7 @@ public:
     bool newParam = true;
     int currentParam = 0;
     int numVals = 0;
+    std::cout << "num params = " << numParams << " num args = " << argc << std::endl;
     for(int pInd = 6+numParams; pInd < argc; pInd++) {
       if(newParam){
         numVals = atoi(argv[pInd]);
@@ -247,6 +258,7 @@ public:
     }
       
     std::vector<ParameterRun> param_runs = ParameterRun::setupRuns(parameterRosNames, paramValues);
+    std::cout << "got runs" << std::endl;
 
     ros::Subscriber subPoses = nh.subscribe("/valid_poses", 3, poseArrayCallback);
     std::cout << "subscribed to valid poses" << std::endl;
@@ -262,12 +274,17 @@ public:
 
     // force a replan every time, our queries shouldn't depend on each other, which might happen for efficiency.
     ros::param::set(std::string("/move_base_node/") + plannerName + "/force_scratch_limit", -1);
+    std::cout << "setting force scratch limit" << std::endl;
 
     forEach(ParameterRun & run, param_runs) {
+      std::cout << "running ";
       for(size_t i = 0; i < run.paramNames.size(); ++i){
         ros::param::set(run.paramNames[i], run.parameters[i]);
+        std::cout << run.parameters[i] << " ";
       }
+      std::cout << " collecting data...";
       collectData();
+      std::cout << "done." << std::endl;
       run.planner_stats = g_Stats;
     }
 
