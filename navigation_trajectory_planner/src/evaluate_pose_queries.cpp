@@ -26,25 +26,25 @@ void poseArrayCallback(const geometry_msgs::PoseArray & pa)
   psStart.header = pa.header;
   psGoal.header = pa.header;
   for(int i = 0; i < pa.poses.size(); ++i) {
-      // no reverse queries?
-      int j = i + 1;
-      if(g_ReverseQueries)
-          j = 0;
-      for(; j < pa.poses.size(); ++j) {
-          if(i == j)
-              continue;
-          psStart.pose = pa.poses[i];
-          psGoal.pose = pa.poses[j];
-          if(hypot(psStart.pose.position.x - psGoal.pose.position.x,
-                      psStart.pose.position.y - psGoal.pose.position.y) < minDist
-                  || hypot(psStart.pose.position.x - psGoal.pose.position.x,
-                      psStart.pose.position.y - psGoal.pose.position.y) > maxDist){
-              std::cout << "Poses too close together or too far apart. Skipping." << std::endl;
-              continue;
-          }
-          std::cout << "adding pose query." << std::endl;
-          poseQueries.push_back(std::make_pair(psStart, psGoal));
+    // no reverse queries?
+    int j = i + 1;
+    if(g_ReverseQueries)
+      j = 0;
+    for(; j < pa.poses.size(); ++j) {
+      if(i == j)
+        continue;
+      psStart.pose = pa.poses[i];
+      psGoal.pose = pa.poses[j];
+      if(hypot(psStart.pose.position.x - psGoal.pose.position.x,
+               psStart.pose.position.y - psGoal.pose.position.y) < minDist
+         || hypot(psStart.pose.position.x - psGoal.pose.position.x,
+                  psStart.pose.position.y - psGoal.pose.position.y) > maxDist){
+        std::cout << "Poses too close together or too far apart. Skipping." << std::endl;
+        continue;
       }
+      std::cout << "adding pose query." << std::endl;
+      poseQueries.push_back(std::make_pair(psStart, psGoal));
+    }
   }
 }
 
@@ -66,7 +66,7 @@ void collectData()
     srv.request.start = poseQueries[i].first;
     srv.request.goal = poseQueries[i].second;
     bool err = false;
-        ROS_INFO("Calling plan for query: %d", i);
+    ROS_INFO("Calling plan for query: %d", i);
     if(!ros::service::call("/move_base_node/make_plan", srv) || srv.response.plan.poses.empty()) {
       ROS_ERROR("Could not plan for %d", i);
       // FIXME also no plan found
@@ -78,11 +78,11 @@ void collectData()
       ros::Duration(0.1).sleep();
       count++;
       if(count > 10) {
-  if(err) {
-    ROS_INFO("Inserting empty stats");
-    g_Stats.push_back(navigation_trajectory_msgs::PlannerStats());
-    break;
-  }
+        if(err) {
+          ROS_INFO("Inserting empty stats");
+          g_Stats.push_back(navigation_trajectory_msgs::PlannerStats());
+          break;
+        }
       }
     }
   }
@@ -99,190 +99,254 @@ void writeKeyVal(YAML::Emitter & em, const std::string & key, const T& val)
 
 void yamlPose(YAML::Emitter & emitter, const geometry_msgs::PoseStamped & ps)
 {
-    emitter << YAML::BeginMap;
-    writeKeyVal(emitter, "frame_id", ps.header.frame_id);
-    writeKeyVal(emitter, "x", ps.pose.position.x);
-    writeKeyVal(emitter, "y", ps.pose.position.y);
-    writeKeyVal(emitter, "z", ps.pose.position.z);
-    writeKeyVal(emitter, "qx", ps.pose.orientation.x);
-    writeKeyVal(emitter, "qy", ps.pose.orientation.y);
-    writeKeyVal(emitter, "qz", ps.pose.orientation.z);
-    writeKeyVal(emitter, "qw", ps.pose.orientation.w);
-    emitter << YAML::EndMap;
+  emitter << YAML::BeginMap;
+  writeKeyVal(emitter, "frame_id", ps.header.frame_id);
+  writeKeyVal(emitter, "x", ps.pose.position.x);
+  writeKeyVal(emitter, "y", ps.pose.position.y);
+  writeKeyVal(emitter, "z", ps.pose.position.z);
+  writeKeyVal(emitter, "qx", ps.pose.orientation.x);
+  writeKeyVal(emitter, "qy", ps.pose.orientation.y);
+  writeKeyVal(emitter, "qz", ps.pose.orientation.z);
+  writeKeyVal(emitter, "qw", ps.pose.orientation.w);
+  emitter << YAML::EndMap;
 }
 
 class ParameterRun
 {
-    public:
-        std::string paramName;
-        XmlRpc::XmlRpcValue parameter;
+public:
+  std::string paramNames;
+  std::vector<XmlRpc::XmlRpcValue> parameters;
 
-        std::vector<navigation_trajectory_msgs::PlannerStats> planner_stats;
+  std::vector<navigation_trajectory_msgs::PlannerStats> planner_stats;
 
-        static std::vector<ParameterRun> setupRuns(const std::string & paramName,
-                const std::vector<std::string> & paramValues) {
-            std::vector<ParameterRun> runs;
+  static std::vector<ParameterRun> setupRuns(const std::vector<std::string> & paramNames,
+                                             const std::vector<std::vector<std::string> > & paramValues) {
+    std::vector<ParameterRun> runs;
 
-            XmlRpc::XmlRpcValue param;
-            if(!ros::param::get(paramName, param)) {
-                ROS_ERROR("Could not get parameter %s to setup runs.", paramName.c_str());
-                return runs;
-            }
+    std::vector<XmlRpc::XmlRpcValue> params(paramNames.size());
+    for(size_t i = 0; i < paramNames.size(); ++i){
+      if(!ros::param::get(paramNames[i], params[i])) {
+        ROS_ERROR("Could not get parameter %s to setup runs.", paramName.c_str());
+        return runs;
+      }
+    }
 
-            ParameterRun run;
-            run.paramName = paramName;
+    ParameterRun run;
+    run.paramNames = paramNames;
+    run.parameters.resize(paramNames.size());
+    int numRuns = 1;
+    for(size_t i = 0; i < paramNames.size(); ++i){
+      numRuns *= paramValues[i].size();
+    }
+    runs.resize(numRuns, run);
 
-            if(param.getType() == XmlRpc::XmlRpcValue::TypeBoolean) {
-                if(!paramValues.empty()) {
-                  forEach(const std::string & paramStr, paramValues) {
-                    bool val = (paramStr == "true"? true: false);
-                    run.parameter = XmlRpc::XmlRpcValue(val);
-                    runs.push_back(run);
-                  }
-                }else{
-                  run.parameter = XmlRpc::XmlRpcValue(true);
-                  runs.push_back(run);
-                  run.parameter = XmlRpc::XmlRpcValue(false);
-                  runs.push_back(run);
-                }
-            } else if(param.getType() == XmlRpc::XmlRpcValue::TypeInt) {
-                forEach(const std::string & paramStr, paramValues) {
-                    std::stringstream ss(paramStr);
-                    int val;
-                    ss >> val;
-                    run.parameter = XmlRpc::XmlRpcValue(val);
-                    runs.push_back(run);
-                }
-            } else if(param.getType() == XmlRpc::XmlRpcValue::TypeDouble) {
-                forEach(const std::string & paramStr, paramValues) {
-                    std::stringstream ss(paramStr);
-                    double val;
-                    ss >> val;
-                    run.parameter = XmlRpc::XmlRpcValue(val);
-                    runs.push_back(run);
-                }
-            } else if(param.getType() == XmlRpc::XmlRpcValue::TypeString) {
-                forEach(const std::string & paramStr, paramValues) {
-                    run.parameter = XmlRpc::XmlRpcValue(paramStr);
-                    runs.push_back(run);
-                }
-            }
+    std::vector<std::vector<std::string>::iterator> it;
+    for(size_t i = 0; i < paramNames.size(); ++i){
+      it[i] = paramValues[i].begin();
+    }
+
+    std::vector<std::vector<std::string> > paramCombinations(numRuns);
+    int count = 0;
+    while(it[0] != paramValues[0].end()){
+      ++it[paramNames.size()-1];
+      for(int i = (int)paramNames.size()-1; (i > 0) && (it[i] == v[i].end()); --i){
+        for(size_t p = 0; p < paramNames.size(); ++p){
+          paramCombinations[count].push_back(*it[p]);
         }
+        count++;
+        it[i] = v[i].begin();
+        ++it[i-1];
+      }
+    }
+
+    for(size_t r = 0; r < numRuns; ++r){
+      for(size_t i = 0; i < paramNames.size(); ++i){
+        const std::string & paramStr = paramCombinations[r][i];
+        if(params[i].getType() == XmlRpc::XmlRpcValue::TypeBoolean){
+          paramStr = paramCombinations[r][i];
+          bool val = (paramStr == "true"? true: false);
+          runs[r].parameters[i] = XmlRpc::XmlRpcValue(val);
+        }else if(params[i].getType() == XmlRpc::XmlRpcValue::TypeInt){
+          std::stringstream ss(paramStr);
+          int val;
+          ss >> val;
+          runs[r].parameters[i] = XmlRpc::XmlRpcValue(val);
+        }else if(params[i].getType() == XmlRpc::XmlRpcValue::TypeDouble){
+          std::stringstream ss(paramStr);
+          double val;
+          ss >> val;
+          runs[r].parameters[i] = XmlRpc::XmlRpcValue(val);
+        }else if(params[i].getType() == XmlRpc::XmlRpcValue::TypeString) {
+          runs[r].parameters[i] = XmlRpc::XmlRpcValue(paramStr);
+        }
+      }
+    }
+    return runs;
+  }
 };
 
 
-int main(int argc, char** argv)
-{
-  if(argc < 5){
-    std::cout << "Usage: " << argv[0] << " <BaseGlobalPlanner name> <parametername> <minDist> <maxDist> [paramValue1 paramValue2 ...]" << std::endl;
-    std::cout << "Note: parameter values are ignored for Boolean params and otherwise converted to the type of the ROS parameter that is set on the server. Thus for non-Boolean parameters it is necessary that the respective value is already on the parameter server." << std::endl;
-    return 1;
-  }
+  int main(int argc, char** argv)
+  {
+    if(argc < 6){
+      std::cout << "Usage: " << argv[0] << " <BaseGlobalPlanner name> <number of parameters> <parametername1> <parametername2> ... <minDist> <maxDist> <start at query> [numParam1Values param1Value1 param1Value2 ...] [numParam2Values param2Value1 param2Value2 ...] ..." << std::endl;
+      std::cout << "Note: parameter values are converted to the type of the ROS parameter that is set on the server. Thus it is necessary that the respective value is already on the parameter server." << std::endl;
+      return 1;
+    }
 
-  ros::init(argc, argv, "evaluate_pose_queries");
-  ros::NodeHandle nh;
+    ros::init(argc, argv, "evaluate_pose_queries");
+    ros::NodeHandle nh;
 
-  std::string plannerName(argv[1]);
-  std::string parameterName(argv[2]);
-  minDist = atof(argv[3]);
-  maxDist = atof(argv[4]);
-  startAtQuery = atoi(argv[5]);
-  std::vector<std::string> paramValues;
-  for(int pInd = 6; pInd < argc; pInd++) {
-      paramValues.push_back(argv[pInd]);
-  }
+    std::string plannerName(argv[1]);
+    int numParams = atoi(argv[2]);
+    if(argc < 5+numParams){
+      std::cout << "given number of parameters does not match the number of given parameters." << std::endl;
+      std::cout << "Usage: " << argv[0] << " <BaseGlobalPlanner name> <number of parameters> <parametername1> <parametername2> ... <minDist> <maxDist> <start at query> [numParam1Values param1Value1 param1Value2 ...] [numParam2Values param2Value1 param2Value2 ...] ..." << std::endl;
+      std::cout << "Note: parameter values are converted to the type of the ROS parameter that is set on the server. Thus it is necessary that the respective value is already on the parameter server." << std::endl;
+      return 1;
+    }
 
-  std::stringstream parameterRosName;
-  parameterRosName << "/move_base_node/" << plannerName << "/" << parameterName;
-  std::vector<ParameterRun> param_runs = ParameterRun::setupRuns(parameterRosName.str(), paramValues);
+    std::vector<std::string> paramNames(numParams);
+    for(int i = 0; i < numParams; ++i){
+      paramNames[i] = std::string(argv[3+i]);
+    }
+    minDist = atof(argv[3+numParams]);
+    maxDist = atof(argv[4+numParams]);
+    startAtQuery = atoi(argv[5+numParams]);
+    std::vector<std::vector<std::string> > paramValues;
+    //std::vector<std::string> paramValues;
+    bool newParam = true;
+    int currentParam = 0;
+    int numVals = 0;
+    for(int pInd = 6+numParams; pInd < argc; pInd++) {
+      if(newParam){
+        numVals = atoi(argv[pInd]);
+        newParam = false;
+      }else{
+        paramValues[currentParam].push_back(argv[pInd]);
+        numVals--;
+        if(numVals == 0){
+          newParam = true;
+          currentParam++;
+        }
+      }
+    }
 
-  ros::Subscriber subPoses = nh.subscribe("/valid_poses", 3, poseArrayCallback);
-  std::cout << "subscribed to valid poses" << std::endl;
-  std::stringstream statsTopicName;
-  statsTopicName << "/move_base_node/" << plannerName << "/planner_stats";
-  ros::Subscriber subStats = nh.subscribe(statsTopicName.str(), 10, statsCallback);
+    for(size_t i = 0; i < numParams; ++i){
+      std::cout << "testing with parameter " << paramNames[i] " for values ";
+      for(size_t j = 0; j < paramValues[i].size(); ++j){
+        std::cout << paramValues[i][j] << " ";
+      }    
+      std::cout << std::endl;
+    }
 
-  ros::Rate rate(10.0);
-  while(ros::ok() && poseQueries.empty()) {
-    ros::spinOnce();
-    rate.sleep();
-  }
+    std::vector<std::string> parameterRosNames;
+    for(size_t i = 0; i < numParams; ++i){
+      std::stringstream parameterRosName;
+      parameterRosName << "/move_base_node/" << plannerName << "/" << parameterName;
+      parameterRosNames.push_back(parameterRosName.str());
+    }
+      
+    std::vector<ParameterRun> param_runs = ParameterRun::setupRuns(parameterRosNames, paramValues);
 
-  // force a replan every time, our queries shouldn't depend on each other, which might happen for efficiency.
-  ros::param::set(std::string("/move_base_node/") + plannerName + "/force_scratch_limit", -1);
+    ros::Subscriber subPoses = nh.subscribe("/valid_poses", 3, poseArrayCallback);
+    std::cout << "subscribed to valid poses" << std::endl;
+    std::stringstream statsTopicName;
+    statsTopicName << "/move_base_node/" << plannerName << "/planner_stats";
+    ros::Subscriber subStats = nh.subscribe(statsTopicName.str(), 10, statsCallback);
 
-  forEach(ParameterRun & run, param_runs) {
-      ros::param::set(run.paramName, run.parameter);
+    ros::Rate rate(10.0);
+    while(ros::ok() && poseQueries.empty()) {
+      ros::spinOnce();
+      rate.sleep();
+    }
+
+    // force a replan every time, our queries shouldn't depend on each other, which might happen for efficiency.
+    ros::param::set(std::string("/move_base_node/") + plannerName + "/force_scratch_limit", -1);
+
+    forEach(ParameterRun & run, param_runs) {
+      for(size_t i = 0; i < run.paramNames.size(); ++i){
+        ros::param::set(run.paramNames[i], run.parameters[i]);
+      }
       collectData();
       run.planner_stats = g_Stats;
-  }
+    }
 
-  YAML::Emitter emitter;
-  emitter << YAML::BeginMap;
-  emitter << YAML::Key;
-  emitter << parameterRosName.str();
-  emitter << YAML::Value;
+    YAML::Emitter emitter;
+    emitter << YAML::BeginMap;
+    emitter << YAML::Key;
+    for(size_t i = 0; i < paramNames.size()-1; ++i){
+      emitter << parameterRosNames[i].str() << ",";
+    }
+    emitter << parameterRosNames[parameterRosNames.size()-1];
+    emitter << YAML::Value;
 
-  emitter << YAML::BeginMap;
-  forEach(ParameterRun & run, param_runs) {
+    emitter << YAML::BeginMap;
+    forEach(ParameterRun & run, param_runs) {
       if(poseQueries.size() != run.planner_stats.size()) {
-          ROS_ERROR("poseQueries size %zu != %s planner_stats size %zu",
+        ROS_ERROR("poseQueries size %zu != %s planner_stats size %zu",
                   poseQueries.size(), parameterName.c_str(), run.planner_stats.size());
       }
 
       emitter << YAML::Key;
-      if(run.parameter.getType() == XmlRpc::XmlRpcValue::TypeBoolean) {
-          bool isOn = run.parameter;
+      for(size_t i = 0; i < paramNames.size(); ++i){
+        emitter << paramNames[i] << "_";
+        if(run.parameters[i].getType() == XmlRpc::XmlRpcValue::TypeBoolean) {
+          bool isOn = run.parameters[i];
           emitter << (isOn ? "true" : "false");  // be a bit nicer with bools, otherwise 1, 0
-      } else {
+        } else {
           std::stringstream paramValueStr;
-          run.parameter.write(paramValueStr);
+          run.parameters[i].write(paramValueStr);
           emitter << paramValueStr.str();
+        }
+        if(i < paramNames.size()-1){
+          emitter << "_";
+        }
       }
 
       emitter << YAML::Value;
       emitter << YAML::BeginSeq;
       int stat_index = startAtQuery;
       forEach(const navigation_trajectory_msgs::PlannerStats & ps, run.planner_stats) {
-          emitter << YAML::BeginMap;
-          if(stat_index < poseQueries.size()) {
-              emitter << YAML::Key;
-              emitter << "start_pose";
-              emitter << YAML::Value;
-              yamlPose(emitter, poseQueries[stat_index].first);
-              emitter << YAML::Key;
-              emitter << "goal_pose";
-              emitter << YAML::Value;
-              yamlPose(emitter, poseQueries[stat_index].second);
-          }
+        emitter << YAML::BeginMap;
+        if(stat_index < poseQueries.size()) {
           emitter << YAML::Key;
-          emitter << "planner_stats";
+          emitter << "start_pose";
           emitter << YAML::Value;
-          emitter << YAML::BeginSeq;
-          forEach(const navigation_trajectory_msgs::PlannerStat & pss, ps.stats) {
-              emitter << YAML::BeginMap;
-              writeKeyVal(emitter, "eps", pss.eps);
-              writeKeyVal(emitter, "suboptimality", pss.suboptimality);
-              writeKeyVal(emitter, "g", pss.g);
-              writeKeyVal(emitter, "cost", pss.cost);
-              writeKeyVal(emitter, "time", pss.time);
-              writeKeyVal(emitter, "expands", pss.expands);
-              emitter << YAML::EndMap;
-          }
-          emitter << YAML::EndSeq;
+          yamlPose(emitter, poseQueries[stat_index].first);
+          emitter << YAML::Key;
+          emitter << "goal_pose";
+          emitter << YAML::Value;
+          yamlPose(emitter, poseQueries[stat_index].second);
+        }
+        emitter << YAML::Key;
+        emitter << "planner_stats";
+        emitter << YAML::Value;
+        emitter << YAML::BeginSeq;
+        forEach(const navigation_trajectory_msgs::PlannerStat & pss, ps.stats) {
+          emitter << YAML::BeginMap;
+          writeKeyVal(emitter, "eps", pss.eps);
+          writeKeyVal(emitter, "suboptimality", pss.suboptimality);
+          writeKeyVal(emitter, "g", pss.g);
+          writeKeyVal(emitter, "cost", pss.cost);
+          writeKeyVal(emitter, "time", pss.time);
+          writeKeyVal(emitter, "expands", pss.expands);
           emitter << YAML::EndMap;
-          stat_index++;
+        }
+        emitter << YAML::EndSeq;
+        emitter << YAML::EndMap;
+        stat_index++;
       }
       emitter << YAML::EndSeq;
+    }
+    emitter << YAML::EndMap;
+
+    emitter << YAML::EndMap;
+
+    FILE* f = fopen("evaluate_pose_queries.yaml", "w");
+    if(!f)
+      return 1;
+    fprintf(f, "%s", emitter.c_str());
+    fclose(f);
   }
-  emitter << YAML::EndMap;
-
-  emitter << YAML::EndMap;
-
-  FILE* f = fopen("evaluate_pose_queries.yaml", "w");
-  if(!f)
-    return 1;
-  fprintf(f, "%s", emitter.c_str());
-  fclose(f);
-}
 
