@@ -114,7 +114,7 @@ void yamlPose(YAML::Emitter & emitter, const geometry_msgs::PoseStamped & ps)
 class ParameterRun
 {
 public:
-  std::string paramNames;
+  std::vector<std::string> paramNames;
   std::vector<XmlRpc::XmlRpcValue> parameters;
 
   std::vector<navigation_trajectory_msgs::PlannerStats> planner_stats;
@@ -126,7 +126,7 @@ public:
     std::vector<XmlRpc::XmlRpcValue> params(paramNames.size());
     for(size_t i = 0; i < paramNames.size(); ++i){
       if(!ros::param::get(paramNames[i], params[i])) {
-        ROS_ERROR("Could not get parameter %s to setup runs.", paramName.c_str());
+        ROS_ERROR("Could not get parameter %s to setup runs.", paramNames[i].c_str());
         return runs;
       }
     }
@@ -140,7 +140,7 @@ public:
     }
     runs.resize(numRuns, run);
 
-    std::vector<std::vector<std::string>::iterator> it;
+    std::vector<std::vector<std::string>::const_iterator> it;
     for(size_t i = 0; i < paramNames.size(); ++i){
       it[i] = paramValues[i].begin();
     }
@@ -149,12 +149,12 @@ public:
     int count = 0;
     while(it[0] != paramValues[0].end()){
       ++it[paramNames.size()-1];
-      for(int i = (int)paramNames.size()-1; (i > 0) && (it[i] == v[i].end()); --i){
+      for(int i = (int)paramNames.size()-1; (i > 0) && (it[i] == paramValues[i].end()); --i){
         for(size_t p = 0; p < paramNames.size(); ++p){
           paramCombinations[count].push_back(*it[p]);
         }
         count++;
-        it[i] = v[i].begin();
+        it[i] = paramValues[i].begin();
         ++it[i-1];
       }
     }
@@ -163,7 +163,6 @@ public:
       for(size_t i = 0; i < paramNames.size(); ++i){
         const std::string & paramStr = paramCombinations[r][i];
         if(params[i].getType() == XmlRpc::XmlRpcValue::TypeBoolean){
-          paramStr = paramCombinations[r][i];
           bool val = (paramStr == "true"? true: false);
           runs[r].parameters[i] = XmlRpc::XmlRpcValue(val);
         }else if(params[i].getType() == XmlRpc::XmlRpcValue::TypeInt){
@@ -233,7 +232,7 @@ public:
     }
 
     for(size_t i = 0; i < numParams; ++i){
-      std::cout << "testing with parameter " << paramNames[i] " for values ";
+      std::cout << "testing with parameter " << paramNames[i] << " for values ";
       for(size_t j = 0; j < paramValues[i].size(); ++j){
         std::cout << paramValues[i][j] << " ";
       }    
@@ -243,7 +242,7 @@ public:
     std::vector<std::string> parameterRosNames;
     for(size_t i = 0; i < numParams; ++i){
       std::stringstream parameterRosName;
-      parameterRosName << "/move_base_node/" << plannerName << "/" << parameterName;
+      parameterRosName << "/move_base_node/" << plannerName << "/" << paramNames[i];
       parameterRosNames.push_back(parameterRosName.str());
     }
       
@@ -276,7 +275,7 @@ public:
     emitter << YAML::BeginMap;
     emitter << YAML::Key;
     for(size_t i = 0; i < paramNames.size()-1; ++i){
-      emitter << parameterRosNames[i].str() << ",";
+      emitter << parameterRosNames[i] << ",";
     }
     emitter << parameterRosNames[parameterRosNames.size()-1];
     emitter << YAML::Value;
@@ -284,8 +283,9 @@ public:
     emitter << YAML::BeginMap;
     forEach(ParameterRun & run, param_runs) {
       if(poseQueries.size() != run.planner_stats.size()) {
+        // TODO fix parameter name output
         ROS_ERROR("poseQueries size %zu != %s planner_stats size %zu",
-                  poseQueries.size(), parameterName.c_str(), run.planner_stats.size());
+                  poseQueries.size(), paramNames[0].c_str(), run.planner_stats.size());
       }
 
       emitter << YAML::Key;
