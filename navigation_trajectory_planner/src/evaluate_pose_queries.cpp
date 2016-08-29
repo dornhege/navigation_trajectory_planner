@@ -212,7 +212,7 @@ public:
     minDist = atof(argv[3+numParams]);
     maxDist = atof(argv[4+numParams]);
     startAtQuery = atoi(argv[5+numParams]);
-    std::vector<std::vector<std::string> > paramValues;
+    std::vector<std::vector<std::string> > paramValues(numParams);
     //std::vector<std::string> paramValues;
     bool newParam = true;
     int currentParam = 0;
