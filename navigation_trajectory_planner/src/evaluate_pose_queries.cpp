@@ -147,16 +147,18 @@ public:
 
     std::vector<std::vector<std::string> > paramCombinations(numRuns);
     int count = 0;
-    while(count != numRuns){
+    while(count < numRuns){
       for(size_t p = 0; p < paramNames.size(); ++p){
         paramCombinations[count].push_back(*(it[p]));
       }
       count++;
 
-      for(int currentParam = 0; ; ){
+      int currentParam = 0;
+      while(currentParam < paramValues.size()){
+        //for(int currentParam = 0; currentParam != paramValues.size()-1; ){
         ++it[currentParam];
         if(it[currentParam] == paramValues[currentParam].end()){
-          if(currentParam == paramValues.size()){
+          if(currentParam == paramValues.size()-1){
             goto useCombinations;
           }
           it[currentParam] = paramValues[currentParam].begin();
