@@ -163,6 +163,7 @@ void NavigationTrajectoryPlanner::publishStats(int solution_cost, int solution_s
         stat.g = planner_stats[i].g;
         stat.cost = planner_stats[i].cost;
         stat.expands = planner_stats[i].expands;
+        stat.reconfigurations = planner_stats[i].reconfigurations;
         stats.stats.push_back(stat);
     }
     stats_publisher_.publish(stats);

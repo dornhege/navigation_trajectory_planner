@@ -275,8 +275,8 @@ public:
     }
 
     // force a replan every time, our queries shouldn't depend on each other, which might happen for efficiency.
-    ros::param::set(std::string("/move_base_node/") + plannerName + "/force_scratch_limit", -1);
-    std::cout << "setting force scratch limit" << std::endl;
+    //ros::param::set(std::string("/move_base_node/") + plannerName + "/force_scratch_limit", -1);
+    //std::cout << "setting force scratch limit" << std::endl;
 
     forEach(ParameterRun & run, param_runs) {
       std::cout << "running ";
@@ -350,6 +350,7 @@ public:
           writeKeyVal(emitter, "cost", pss.cost);
           writeKeyVal(emitter, "time", pss.time);
           writeKeyVal(emitter, "expands", pss.expands);
+          writeKeyVal(emitter, "reconfigurations", pss.reconfigurations);
           emitter << YAML::EndMap;
         }
         emitter << YAML::EndSeq;

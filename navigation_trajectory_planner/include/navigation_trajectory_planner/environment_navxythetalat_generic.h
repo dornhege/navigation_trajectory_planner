@@ -83,8 +83,7 @@ class EnvironmentNavXYThetaLatGeneric : public EnvironmentNAVXYTHETALAT
          * Here assumes that we can convert with
          * ConvertStateIDPathintoXYThetaPath
          */
-        virtual moveit_msgs::DisplayTrajectory stateIDPathToDisplayTrajectory(
-              std::vector<int> & stateIDPath);
+        virtual moveit_msgs::DisplayTrajectory stateIDPathToDisplayTrajectory(const std::vector<int> & stateIDPath);
 
         virtual void resetTimingStats();
         virtual void printTimingStats();

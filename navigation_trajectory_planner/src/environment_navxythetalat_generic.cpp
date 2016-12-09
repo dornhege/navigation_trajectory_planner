@@ -239,8 +239,7 @@ void EnvironmentNavXYThetaLatGeneric::printTimingStats()
     timeHeuristic->printStats(true);
 }
 
-moveit_msgs::DisplayTrajectory EnvironmentNavXYThetaLatGeneric::stateIDPathToDisplayTrajectory(
-        std::vector<int> & stateIDPath)
+moveit_msgs::DisplayTrajectory EnvironmentNavXYThetaLatGeneric::stateIDPathToDisplayTrajectory(const std::vector<int> & stateIDPath)
 {
     moveit_msgs::DisplayTrajectory dtraj;
     dtraj.model_id = "robot";
