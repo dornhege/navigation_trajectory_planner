@@ -100,7 +100,7 @@ protected:
     double initial_epsilon_;
     int force_scratch_limit_;   ///< if the number of changed cells is >= this, planning from scratch will happen
 
-    costmap_2d::Costmap2DROS* costmap_ros_;
+    //costmap_2d::Costmap2DROS* costmap_ros_;
 
     ros::Publisher plan_pub_;
     ros::Publisher traj_pub_;

@@ -40,7 +40,7 @@ const std::vector<int> * XYThetaStateChangeQuery::getSuccessors() const
 }
 
 NavigationTrajectoryPlanner::NavigationTrajectoryPlanner() :
-  initialized_(false), costmap_ros_(NULL), 
+  initialized_(false), //costmap_ros_(NULL), 
     initial_epsilon_(0),
     env_(NULL), force_scratch_limit_(0), planner_(NULL), allocated_time_(0)
 {
@@ -53,7 +53,7 @@ void NavigationTrajectoryPlanner::initialize(std::string name, costmap_2d::Costm
 
     ROS_INFO("Planner Name is %s", name.c_str());
     private_nh_ = new ros::NodeHandle("~/" + name);
-    costmap_ros_ = costmap_ros;
+    //costmap_ros_ = costmap_ros;
 
     readDynamicParameters();
 
