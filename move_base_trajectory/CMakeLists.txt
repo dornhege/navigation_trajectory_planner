@@ -41,22 +41,22 @@ add_library(move_base_interfaces
   src/base_global_planner.cpp
 )
 
-add_library(move_base
-  src/move_base.cpp
+add_library(move_base_trajectory
+  src/move_base_trajectory.cpp
+  src/global_planner_thread.cpp
+  src/local_planner.cpp
 )
-target_link_libraries(move_base
+target_link_libraries(move_base_trajectory
     move_base_interfaces
     ${Boost_LIBRARIES}
-    ${catkin_LIBRARIES}
-    )
-add_dependencies(move_base ${PROJECT_NAME}_gencfg)
-add_dependencies(move_base geometry_msgs_gencpp)
+    ${catkin_LIBRARIES})
 
-add_executable(move_base_node
-  src/move_base_node.cpp
+add_executable(move_base_trajectory_node
+  src/move_base_trajectory_node.cpp
 )
-target_link_libraries(move_base_node move_base)
-set_target_properties(move_base_node PROPERTIES OUTPUT_NAME move_base)
+target_link_libraries(move_base_trajectory_node move_base_trajectory ${catkin_LIBRARIES})
+#target_link_libraries(move_base_trajectory_node move_base_trajectory)
+
 
 install(DIRECTORY launch
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
@@ -73,8 +73,8 @@ install(
 
 install(
     TARGETS
-        move_base
-        move_base_node
+        move_base_trajectory
+        move_base_trajectory_node
     ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
     LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
     RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
