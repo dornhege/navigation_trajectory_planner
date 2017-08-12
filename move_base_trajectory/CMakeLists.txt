@@ -3,14 +3,15 @@ project(move_base_trajectory)
 
 find_package(catkin REQUIRED
     COMPONENTS
-        cmake_modules
-        roscpp
-        pluginlib
         actionlib
+        cmake_modules
         dynamic_reconfigure
+        geometry_msgs
         message_generation
         moveit_msgs
-        nav_core
+#        nav_core
+        pluginlib
+        roscpp
         tf
 )
 find_package(Eigen REQUIRED)
@@ -25,8 +26,12 @@ catkin_package(
     INCLUDE_DIRS include
     LIBRARIES move_base_interfaces
     CATKIN_DEPENDS
-        roscpp
+        actionlib
         dynamic_reconfigure
+        geometry_msgs
+        pluginlib
+        roscpp
+        tf
 )
 
 include_directories(

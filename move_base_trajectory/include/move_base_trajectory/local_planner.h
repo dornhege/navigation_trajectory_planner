@@ -24,6 +24,7 @@ class LocalPlanner
         /// \returns true, if a command was executed.
         bool executeCurrentTrajectory();
 
+        bool isGoalReached() const;
     protected:
         bool loadLocalPlanner(const std::string & localPlannerName, tf2_ros::Buffer & tf);
 

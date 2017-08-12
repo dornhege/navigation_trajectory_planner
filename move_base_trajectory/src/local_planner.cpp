@@ -42,6 +42,11 @@ bool LocalPlanner::executeCurrentTrajectory()
     return foundValidCommand;
 }
 
+bool LocalPlanner::isGoalReached() const
+{
+    return _localPlanner->isGoalReached();
+}
+
 bool LocalPlanner::loadLocalPlanner(const std::string & localPlannerName, tf2_ros::Buffer & tf)
 {
     try {

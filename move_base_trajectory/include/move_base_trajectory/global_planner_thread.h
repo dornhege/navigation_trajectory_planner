@@ -1,8 +1,13 @@
 #ifndef GLOBAL_PLANNER_THREAD_H
 #define GLOBAL_PLANNER_THREAD_H
 
+#include <move_base_trajectory/base_global_planner.h>
+
 #include <moveit_msgs/RobotTrajectory.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <pluginlib/class_loader.h>
+
+#include <string>
 
 namespace move_base_trajectory
 {
@@ -35,6 +40,14 @@ class GlobalPlannerThread
 
         /// Blocks until the current computation is halted (or none is running).
         void stopTrajectoryComputation();
+
+    protected:
+        bool loadGlobalPlanner(const std::string & globalPlannerName);
+
+    protected: 
+        boost::shared_ptr<move_base_trajectory::BaseGlobalPlannerTrajectory> _globalPlanner;
+        pluginlib::ClassLoader<move_base_trajectory::BaseGlobalPlannerTrajectory> _globalPlannerLoader;
+
 };
 
 }
