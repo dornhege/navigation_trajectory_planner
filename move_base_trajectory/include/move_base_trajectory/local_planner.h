@@ -12,7 +12,7 @@ namespace move_base_trajectory
 class LocalPlanner
 {
     public:
-        LocalPlanner();
+        LocalPlanner(tf2_ros::Buffer & tf);
         ~LocalPlanner();
 
         /// \returns the trajectory that is currently being executed.
@@ -25,12 +25,12 @@ class LocalPlanner
         bool executeCurrentTrajectory();
 
     protected:
-        bool loadLocalPlanner(const std::string & localPlannerName);
+        bool loadLocalPlanner(const std::string & localPlannerName, tf2_ros::Buffer & tf);
 
     protected:
         moveit_msgs::RobotTrajectory _currentTrajectory;
 
-        ros::Publisher _pubVelocity;
+        ros::Publisher _velocityPublisher;
 
         boost::shared_ptr<move_base_trajectory::BaseLocalPlannerTrajectory> _localPlanner;
         pluginlib::ClassLoader<move_base_trajectory::BaseLocalPlannerTrajectory> _localPlannerLoader;

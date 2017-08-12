@@ -3,7 +3,7 @@
 namespace move_base_trajectory
 {
 
-MoveBaseTrajectory::MoveBaseTrajectory(tf2_ros::Buffer & tf) : _tf(tf), _actionServer(NULL)
+MoveBaseTrajectory::MoveBaseTrajectory(tf2_ros::Buffer & tf) : _tf(tf), _actionServer(NULL), _localPlanner(tf)
 {
     ros::NodeHandle nh;
     _actionServer = new MoveBaseActionServer(nh, "move_base",
