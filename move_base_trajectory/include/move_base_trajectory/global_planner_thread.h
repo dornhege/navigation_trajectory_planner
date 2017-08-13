@@ -3,7 +3,7 @@
 
 #include <move_base_trajectory/base_global_planner.h>
 
-#include <moveit_msgs/RobotTrajectory.h>
+#include <moveit_msgs/DisplayTrajectory.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <pluginlib/class_loader.h>
 
@@ -22,10 +22,10 @@ class GlobalPlannerThread
         /**
          * \returns true, if a best trajectory exists.
          */
-        bool getBestTrajectory(moveit_msgs::RobotTrajectory & traj) const;
+        bool getBestTrajectory(moveit_msgs::DisplayTrajectory & dtraj) const;
 
         /// \returns true, if the trajectory computation is still running.
-        bool isComputing() const;
+        bool isComputing();
 
         /// Start computation of a trajectory to a new goal.
         /**
@@ -33,7 +33,7 @@ class GlobalPlannerThread
          *
          * \returns true, if the goal is valid and a computation could be started.
          */
-        bool computeTrajectory(const geometry_msgs::PoseStamped & goal);
+        bool computeTrajectory(const geometry_msgs::PoseStamped & start, const geometry_msgs::PoseStamped & goal);
 
         /// \returns true, if there is a trajectory found by the planner.
         bool foundTrajectory() const;
@@ -41,12 +41,15 @@ class GlobalPlannerThread
         /// Blocks until the current computation is halted (or none is running).
         void stopTrajectoryComputation();
 
+        std::string planningFrame() const;
+
     protected:
         bool loadGlobalPlanner(const std::string & globalPlannerName);
 
     protected: 
         boost::shared_ptr<move_base_trajectory::BaseGlobalPlannerTrajectory> _globalPlanner;
         pluginlib::ClassLoader<move_base_trajectory::BaseGlobalPlannerTrajectory> _globalPlannerLoader;
+        boost::thread _plannerThread;
 
 };
 

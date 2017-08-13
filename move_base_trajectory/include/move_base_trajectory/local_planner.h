@@ -25,6 +25,9 @@ class LocalPlanner
         bool executeCurrentTrajectory();
 
         bool isGoalReached() const;
+
+        std::string planningFrame() const;
+
     protected:
         bool loadLocalPlanner(const std::string & localPlannerName, tf2_ros::Buffer & tf);
 

@@ -40,13 +40,14 @@ const std::vector<int> * XYThetaStateChangeQuery::getSuccessors() const
 }
 
 NavigationTrajectoryPlanner::NavigationTrajectoryPlanner() :
-  initialized_(false), //costmap_ros_(NULL), 
+    initialized_(false), //costmap_ros_(NULL), 
     initial_epsilon_(0),
     env_(NULL), force_scratch_limit_(0), planner_(NULL), allocated_time_(0)
 {
 }
 
-void NavigationTrajectoryPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros)
+//void NavigationTrajectoryPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros)
+void NavigationTrajectoryPlanner::initialize(std::string name)
 {
     if(initialized_)
         return;
@@ -128,17 +129,18 @@ bool NavigationTrajectoryPlanner::createPlanner()
         ROS_INFO("Planning with ARA*");
         planner_ = new ARAPlanner(env_, forward_search);
         dynamic_cast<ARAPlanner*>(planner_)->set_track_expansions(track_expansions);
-    } else if(planner_type == "ADPlanner") {
+        /*} else if(planner_type == "ADPlanner") {
         ROS_INFO("Planning with AD*");
-        planner_ = new ADPlanner(env_, forward_search);
+        planner_ = new ADPlanner(env_, forward_search);*/
     } else {
-        ROS_ERROR("Unknown planner type: %s (supported: ARAPlanner or ADPlanner)", planner_type.c_str());
+        //ROS_ERROR("Unknown planner type: %s (supported: ARAPlanner or ADPlanner)", planner_type.c_str());
+        ROS_ERROR("Unknown planner type: %s (supported: ARAPlanner)", planner_type.c_str());
         return false;
     }
     return true;
 }
 
-std::string NavigationTrajectoryPlanner::getPlanningFrame() const
+std::string NavigationTrajectoryPlanner::planningFrame() const
 {
     return env_->getPlanningFrame();
 }
@@ -179,7 +181,7 @@ bool NavigationTrajectoryPlanner::sampleValidPoses(navigation_trajectory_msgs::S
     env_->updateForPlanRequest();
 
     geometry_msgs::Pose pose;
-    resp.poses.header.frame_id = getPlanningFrame();
+    resp.poses.header.frame_id = planningFrame();
     int numTries = 0;
     while(numTries < req.max_tries) {
         // sample pose and add to resp
@@ -206,7 +208,7 @@ bool NavigationTrajectoryPlanner::sampleValidPoses(navigation_trajectory_msgs::S
 
 bool NavigationTrajectoryPlanner::makeTrajectory(const geometry_msgs::PoseStamped& startPose,
         const geometry_msgs::PoseStamped& goalPose,
-        moveit_msgs::RobotTrajectory & traj)
+        moveit_msgs::DisplayTrajectory & dtraj)
 {
     if(!initialized_) {
         ROS_ERROR("Global planner is not initialized");
@@ -232,7 +234,7 @@ bool NavigationTrajectoryPlanner::makeTrajectory(const geometry_msgs::PoseStampe
     }
     env_->updateForPlanRequest();
 
-    ROS_INFO("Planning frame is %s", getPlanningFrame().c_str());
+    ROS_INFO("Planning frame is %s", planningFrame().c_str());
 
     geometry_msgs::PoseStamped start = startPose;
     if(!env_->transformPoseToPlanningFrame(start)) {
@@ -323,15 +325,17 @@ bool NavigationTrajectoryPlanner::makeTrajectory(const geometry_msgs::PoseStampe
     ROS_INFO("Solution length %zu", solution_stateIDs.size());
 
     publishStats(solution_cost, solution_stateIDs.size(), start, goal);
-    traj = moveit_msgs::RobotTrajectory();    // clear
-    moveit_msgs::DisplayTrajectory dtraj = env_->stateIDPathToDisplayTrajectory(solution_stateIDs);
+    //traj = moveit_msgs::RobotTrajectory();    // clear
+    dtraj = moveit_msgs::DisplayTrajectory();
+    dtraj = env_->stateIDPathToDisplayTrajectory(solution_stateIDs);
     if(!dtraj.trajectory.empty()) {
         ROS_ASSERT(dtraj.trajectory.size() == 1);
-        traj = dtraj.trajectory[0];
-        nav_msgs::Path gui_path = trajectoryToGuiPath(traj);
+        // traj = dtraj.trajectory[0];
+        nav_msgs::Path gui_path = trajectoryToGuiPath(dtraj.trajectory[0]);
         plan_pub_.publish(gui_path);
     }
-    traj_pub_.publish(dtraj);
+    //traj_pub_.publish(dtraj);
+    // TODO publish somewhere else
     publish_expansions();
     publish_expansion_map();
     return true;
@@ -340,7 +344,7 @@ bool NavigationTrajectoryPlanner::makeTrajectory(const geometry_msgs::PoseStampe
 nav_msgs::Path NavigationTrajectoryPlanner::trajectoryToGuiPath(const moveit_msgs::RobotTrajectory & traj) const
 {
     nav_msgs::Path gui_path;
-    gui_path.header.frame_id = getPlanningFrame();
+    gui_path.header.frame_id = planningFrame();
     ros::Time plan_time = ros::Time::now();
     gui_path.header.stamp = plan_time;
     if(traj.multi_dof_joint_trajectory.points.empty())
@@ -351,7 +355,7 @@ nav_msgs::Path NavigationTrajectoryPlanner::trajectoryToGuiPath(const moveit_msg
     for(unsigned int i = 0; i < traj.multi_dof_joint_trajectory.points.size(); i++) {
         geometry_msgs::PoseStamped pose;
         pose.header.stamp = plan_time;
-        pose.header.frame_id = getPlanningFrame();
+        pose.header.frame_id = planningFrame();
         trajectory_msgs::MultiDOFJointTrajectoryPoint pt = traj.multi_dof_joint_trajectory.points[i];
         ROS_ASSERT(pt.transforms.size() == 1);
 
@@ -380,7 +384,7 @@ void NavigationTrajectoryPlanner::publish_expansions()
     mark.scale.y = 0.01;
     mark.scale.z = 0.01;
     mark.color.a = 0.1;
-    mark.header.frame_id = getPlanningFrame();
+    mark.header.frame_id = planningFrame();
     color_tools::HSV hsv;
     hsv.s = 1.0;
     hsv.v = 1.0;
@@ -477,7 +481,7 @@ void NavigationTrajectoryPlanner::publish_expansion_map()
     double minX, maxX, minY, maxY;
     env_->getExtents(minX, maxX, minY, maxY);
     nav_msgs::OccupancyGrid grid;
-    grid.header.frame_id = getPlanningFrame();
+    grid.header.frame_id = planningFrame();
     grid.info.resolution = resolution;
     grid.info.width = sizeX;
     grid.info.height = sizeY;
@@ -524,5 +528,24 @@ void NavigationTrajectoryPlanner::publish_expansion_map()
     pub_generation_first_map_.publish(grid);
 }
 
+bool NavigationTrajectoryPlanner::foundTrajectory() const
+{
+    return planner_->found_initial_path();
+}
+
+bool NavigationTrajectoryPlanner::getCurrentBestTrajectory(moveit_msgs::DisplayTrajectory & dtraj) const
+{
+    if(!foundTrajectory()){
+        return false;
+    }
+    std::vector<int> bestStateIds;
+    double bestCost;
+    planner_->current_best_path(bestStateIds, bestCost);
+    if(bestCost < INFINITECOST){
+        dtraj = env_->stateIDPathToDisplayTrajectory(bestStateIds);
+        return true;
+    }
+    return false;
+}
 }
 

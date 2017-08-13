@@ -4,6 +4,7 @@ project(move_base_trajectory)
 find_package(catkin REQUIRED
     COMPONENTS
         actionlib
+        ais_3dtools_ros_utility
         cmake_modules
         dynamic_reconfigure
         geometry_msgs
@@ -12,7 +13,10 @@ find_package(catkin REQUIRED
 #        nav_core
         pluginlib
         roscpp
-        tf
+        #tf
+        tf2
+        tf2_ros
+        tf2_geometry_msgs
 )
 find_package(Eigen REQUIRED)
 add_definitions(${EIGEN_DEFINITIONS})
@@ -27,11 +31,15 @@ catkin_package(
     LIBRARIES move_base_interfaces
     CATKIN_DEPENDS
         actionlib
+        ais_3dtools_ros_utility
         dynamic_reconfigure
         geometry_msgs
         pluginlib
         roscpp
-        tf
+        #tf
+        tf2
+        tf2_ros
+        tf2_geometry_msgs
 )
 
 include_directories(

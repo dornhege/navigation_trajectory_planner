@@ -21,6 +21,8 @@ class BaseLocalPlannerTrajectory
       virtual void initialize(std::string name, tf2_ros::Buffer* tf) = 0;
 
       virtual bool setTrajectory(const moveit_msgs::RobotTrajectory & traj) = 0;
+
+      virtual std::string planningFrame() const = 0;
 };
 
 }

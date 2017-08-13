@@ -47,6 +47,11 @@ bool LocalPlanner::isGoalReached() const
     return _localPlanner->isGoalReached();
 }
 
+std::string LocalPlanner::planningFrame() const
+{
+    return _localPlanner->planningFrame();
+}
+
 bool LocalPlanner::loadLocalPlanner(const std::string & localPlannerName, tf2_ros::Buffer & tf)
 {
     try {

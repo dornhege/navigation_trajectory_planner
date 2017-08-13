@@ -3,13 +3,13 @@
 
 #include "navigation_trajectory_msgs/SampleValidPoses.h"
 #include "navigation_trajectory_planner/environment_navxythetalat_generic.h"
+#include "move_base_trajectory/base_global_planner.h"
 
-#include <costmap_2d/costmap_2d_ros.h>
 #include <sbpl/headers.h>
 #include <nav_core/base_global_planner.h>
-#include "move_base_trajectory/base_global_planner.h"
 #include <ros/ros.h>
 #include <nav_msgs/Path.h>
+#include <moveit_msgs/DisplayTrajectory.h>
 
 #include <iostream>
 #include <vector>
@@ -40,21 +40,25 @@ public:
         delete private_nh_;
     }
 
-    virtual void initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
+    //virtual void initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
+    virtual void initialize(std::string name);
 
     /// Main query from move_base
-    virtual bool makeTrajectory(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, moveit_msgs::RobotTrajectory & traj);
+    virtual bool makeTrajectory(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, moveit_msgs::DisplayTrajectory & dtraj);
 
     /// Returns the frame that all planning is happening in.
     /**
      * This is usually the planning frame of the environment. All data has to be either in this
      * frame or has to be transformed to this.
      */
-    virtual std::string getPlanningFrame() const;
+    virtual std::string planningFrame() const;
 
     /// Read in parameters that can be re-set for each makePlan call.
     virtual void readDynamicParameters();
 
+    virtual bool foundTrajectory() const;
+
+    virtual bool getCurrentBestTrajectory(moveit_msgs::DisplayTrajectory & dtraj) const;
 protected:
     virtual bool sampleValidPoses(navigation_trajectory_msgs::SampleValidPoses::Request & req, navigation_trajectory_msgs::SampleValidPoses::Response & resp);
 
@@ -93,7 +97,8 @@ protected:
     bool initialized_;
     ros::NodeHandle* private_nh_;
 
-    SBPLPlanner* planner_;
+    //SBPLPlanner* planner_;
+    ARAPlanner* planner_;
     EnvironmentNavXYThetaLatGeneric* env_;
 
     double allocated_time_;

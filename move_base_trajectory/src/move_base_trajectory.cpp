@@ -1,5 +1,8 @@
 #include "move_base_trajectory/move_base_trajectory.h"
 
+#include <ais_3dtools_ros_utility/ros_utils.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+
 namespace move_base_trajectory
 {
 
@@ -24,13 +27,21 @@ void MoveBaseTrajectory::executeCallback(const move_base_msgs::MoveBaseGoalConst
     // handle final goal/fail
 
     bool trigger_replan = false;  // TODO move to function for timeouts/etc. or remove if not needed
-    moveit_msgs::RobotTrajectory current_trajectory;
+    moveit_msgs::DisplayTrajectory current_trajectory;
     while(true /* !atGoal or permanant failrure or preempt,etc. */) {
         // if(not plan or trigger_replan) current_trajectory = computeGlobalTrajectory
         if(!isValidTrajectory(current_trajectory) || trigger_replan) {
             clearTrajectory(current_trajectory);
+            
+            geometry_msgs::TransformStamped planningStartTf = _tf.lookupTransform(_globalPlanner.planningFrame(), _localPlanner.planningFrame(), 
+                                                                                     ros::Time(0), ros::Duration(1.5));
+  
+            geometry_msgs::PoseStamped planningStartPose;
+            ais_3dtools_ros_utility::TransformToPose(planningStartTf, planningStartPose);
+
+            //tf2::convert<geometry_msgs::TransformStamped, geometry_msgs::PoseStamped>(planningStartTf, planningStartPose);
             enum GlobalTrajectoryComputationResult res = computeGlobalTrajectory(
-                    goal->target_pose, current_trajectory);
+                planningStartPose, goal->target_pose, current_trajectory);
             switch(res) {
                 case GTCR_SUCCESS:
                     // nothing to do here, we got what we wanted...
@@ -49,8 +60,9 @@ void MoveBaseTrajectory::executeCallback(const move_base_msgs::MoveBaseGoalConst
         // if(planner.current_trajectory.ts != plan.ts)
         //  plan = planner.current_trajectory
 
-        if(!isSameTrajectory(current_trajectory, _localPlanner.currentTrajectory())) {
-            updateLocalPlannerTrajectory(current_trajectory);
+        ROS_ASSERT(current_trajectory.trajectory.size() > 0);
+        if(!isSameTrajectory(current_trajectory.trajectory[0], _localPlanner.currentTrajectory())) {
+            updateLocalPlannerTrajectory(current_trajectory.trajectory[0]);
         }
         if(!executeTrajectory()) {
             trigger_replan = true;
@@ -59,14 +71,15 @@ void MoveBaseTrajectory::executeCallback(const move_base_msgs::MoveBaseGoalConst
 }
 
 MoveBaseTrajectory::GlobalTrajectoryComputationResult MoveBaseTrajectory::computeGlobalTrajectory(
-        const geometry_msgs::PoseStamped & goal, moveit_msgs::RobotTrajectory & traj)
+    const geometry_msgs::PoseStamped & start, const geometry_msgs::PoseStamped & goal, 
+    moveit_msgs::DisplayTrajectory & dtraj)
 {
     enum GlobalTrajectoryComputationResult result = GTCR_NO_TRAJECTORY;
-    _globalPlanner.computeTrajectory(goal);
+    _globalPlanner.computeTrajectory(start, goal);
     // setup planner with new goal
     while(_globalPlanner.isComputing()) {   // true = not preempt, timeout, whatever
         if(_globalPlanner.foundTrajectory()) {
-            if(_globalPlanner.getBestTrajectory(traj)) {
+            if(_globalPlanner.getBestTrajectory(dtraj)) {
                 result = GTCR_SUCCESS;
                 break;
             } else {
@@ -76,7 +89,7 @@ MoveBaseTrajectory::GlobalTrajectoryComputationResult MoveBaseTrajectory::comput
         }
     }
     if(_globalPlanner.foundTrajectory()) {
-        if(_globalPlanner.getBestTrajectory(traj)) {
+        if(_globalPlanner.getBestTrajectory(dtraj)) {
             result = GTCR_SUCCESS;
         } else {
             result = GTCR_NO_TRAJECTORY;
@@ -105,14 +118,15 @@ bool MoveBaseTrajectory::isSameTrajectory(const moveit_msgs::RobotTrajectory & t
     return traj1.multi_dof_joint_trajectory.header.stamp == traj2.multi_dof_joint_trajectory.header.stamp;
 }
 
-bool MoveBaseTrajectory::isValidTrajectory(const moveit_msgs::RobotTrajectory & traj)
+bool MoveBaseTrajectory::isValidTrajectory(const moveit_msgs::DisplayTrajectory & dtraj)
 {
-    return !traj.multi_dof_joint_trajectory.points.empty();
+    return (!dtraj.trajectory.empty() && !dtraj.trajectory[0].multi_dof_joint_trajectory.points.empty());
 }
 
-void MoveBaseTrajectory::clearTrajectory(moveit_msgs::RobotTrajectory & traj)
+void MoveBaseTrajectory::clearTrajectory(moveit_msgs::DisplayTrajectory & dtraj)
 {
-    traj = moveit_msgs::RobotTrajectory();
+    //dtraj = moveit_msgs::RobotTrajectory();
+    dtraj.trajectory.clear();
 }
 
 }

@@ -2,6 +2,7 @@
 
 #include <ros/ros.h>
 #include <string>
+#include <boost/thread.hpp>
 
 namespace move_base_trajectory
 {
@@ -21,31 +22,41 @@ GlobalPlannerThread::~GlobalPlannerThread()
 {
 }
 
-bool GlobalPlannerThread::getBestTrajectory(moveit_msgs::RobotTrajectory & traj) const
+bool GlobalPlannerThread::getBestTrajectory(moveit_msgs::DisplayTrajectory & traj) const
 {
-
+    if(foundTrajectory()){
+        return _globalPlanner->getCurrentBestTrajectory(traj);
+    }
+    return false;
 }
 
-bool GlobalPlannerThread::isComputing() const
+bool GlobalPlannerThread::isComputing()
 {
-
+    return !_plannerThread.timed_join(boost::posix_time::seconds(0));
 }
 
-bool GlobalPlannerThread::computeTrajectory(const geometry_msgs::PoseStamped & goal)
+bool GlobalPlannerThread::computeTrajectory(const geometry_msgs::PoseStamped & start, const geometry_msgs::PoseStamped & goal)
 {
-
+    // start thread, send goal to planner
+    moveit_msgs::DisplayTrajectory trajectory; // TODO do we still need this in the global planner?
+    _plannerThread = boost::thread(boost::bind(&BaseGlobalPlannerTrajectory::makeTrajectory, _globalPlanner, start, goal, trajectory));
 }
 
 bool GlobalPlannerThread::foundTrajectory() const
 {
-
+    return _globalPlanner->foundTrajectory();
 }
 
 void GlobalPlannerThread::stopTrajectoryComputation()
 {
-
+    // TODO define interruption points for the thread.
+    _plannerThread.interrupt();
 }
 
+std::string GlobalPlannerThread::planningFrame() const
+{
+    return _globalPlanner->planningFrame();
+}
 
 bool GlobalPlannerThread::loadGlobalPlanner(const std::string & globalPlannerName)
 {

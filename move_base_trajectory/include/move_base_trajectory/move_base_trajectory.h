@@ -8,7 +8,7 @@
 #include <move_base_trajectory/base_global_planner.h>
 #include "move_base_trajectory/local_planner.h"
 #include "move_base_trajectory/global_planner_thread.h"
-#include <moveit_msgs/RobotTrajectory.h>
+#include <moveit_msgs/DisplayTrajectory.h>
 
 namespace move_base_trajectory
 {
@@ -41,7 +41,8 @@ class MoveBaseTrajectory
          * should continue depending on the result.
          */
         GlobalTrajectoryComputationResult computeGlobalTrajectory(
-                const geometry_msgs::PoseStamped & goal, moveit_msgs::RobotTrajectory & traj);
+            const geometry_msgs::PoseStamped & start, const geometry_msgs::PoseStamped & goal, 
+            moveit_msgs::DisplayTrajectory & traj);
 
         /// Update the local planner with a new trajectory.
         /**
@@ -63,10 +64,10 @@ class MoveBaseTrajectory
                 const moveit_msgs::RobotTrajectory & traj2);
 
         /// \returns true, if traj is a valid trajectory (with content) that could be executed.
-        bool isValidTrajectory(const moveit_msgs::RobotTrajectory & traj);
+        bool isValidTrajectory(const moveit_msgs::DisplayTrajectory & dtraj);
 
         /// Empties a trajectory.
-        void clearTrajectory(moveit_msgs::RobotTrajectory & traj);
+        void clearTrajectory(moveit_msgs::DisplayTrajectory & dtraj);
 
     protected:
         tf2_ros::Buffer & _tf;
