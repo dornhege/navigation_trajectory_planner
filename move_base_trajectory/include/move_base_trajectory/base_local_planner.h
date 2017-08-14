@@ -22,6 +22,8 @@ class BaseLocalPlannerTrajectory
 
       virtual bool setTrajectory(const moveit_msgs::RobotTrajectory & traj) = 0;
 
+      virtual const moveit_msgs::RobotTrajectory& currentTrajectory() const = 0;
+
       virtual std::string planningFrame() const = 0;
 };
 

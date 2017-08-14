@@ -543,6 +543,10 @@ bool NavigationTrajectoryPlanner::getCurrentBestTrajectory(moveit_msgs::DisplayT
     planner_->current_best_path(bestStateIds, bestCost);
     if(bestCost < INFINITECOST){
         dtraj = env_->stateIDPathToDisplayTrajectory(bestStateIds);
+        if(dtraj.trajectory.empty()){
+            ROS_WARN("The computed trajectory is empty!");
+            return false;
+        }
         return true;
     }
     return false;

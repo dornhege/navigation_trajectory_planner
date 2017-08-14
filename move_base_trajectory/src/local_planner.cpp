@@ -25,12 +25,12 @@ LocalPlanner::~LocalPlanner()
 
 const moveit_msgs::RobotTrajectory & LocalPlanner::currentTrajectory() const
 {
-    return _currentTrajectory;
+    return _localPlanner->currentTrajectory();
 }
 
 bool LocalPlanner::setTrajectory(const moveit_msgs::RobotTrajectory & traj)
 {
-    _localPlanner->setTrajectory(traj);
+    return _localPlanner->setTrajectory(traj);
 }
 
 bool LocalPlanner::executeCurrentTrajectory()

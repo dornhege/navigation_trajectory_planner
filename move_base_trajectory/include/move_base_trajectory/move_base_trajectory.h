@@ -28,6 +28,7 @@ class MoveBaseTrajectory
         enum GlobalTrajectoryComputationResult {
             GTCR_SUCCESS,
             GTCR_NO_TRAJECTORY,
+            GTCR_INCONSISTENT,
             GTCR_PREEMPTED,
         };
 
@@ -42,7 +43,10 @@ class MoveBaseTrajectory
          */
         GlobalTrajectoryComputationResult computeGlobalTrajectory(
             const geometry_msgs::PoseStamped & start, const geometry_msgs::PoseStamped & goal, 
-            moveit_msgs::DisplayTrajectory & traj);
+            moveit_msgs::RobotTrajectory & traj);
+
+
+        MoveBaseTrajectory::GlobalTrajectoryComputationResult updateTrajectoryFromPlanner(moveit_msgs::RobotTrajectory& traj);
 
         /// Update the local planner with a new trajectory.
         /**
@@ -64,12 +68,15 @@ class MoveBaseTrajectory
                 const moveit_msgs::RobotTrajectory & traj2);
 
         /// \returns true, if traj is a valid trajectory (with content) that could be executed.
-        bool isValidTrajectory(const moveit_msgs::DisplayTrajectory & dtraj);
+        bool isValidTrajectory(const moveit_msgs::RobotTrajectory & dtraj);
 
         /// Empties a trajectory.
-        void clearTrajectory(moveit_msgs::DisplayTrajectory & dtraj);
+        void clearTrajectory(moveit_msgs::RobotTrajectory & dtraj);
 
     protected:
+        std::string _baseFrame;
+        ros::Publisher _trajectoryPub;
+
         tf2_ros::Buffer & _tf;
         MoveBaseActionServer* _actionServer;
 

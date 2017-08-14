@@ -5,6 +5,7 @@ find_package(catkin REQUIRED
     COMPONENTS
         actionlib
         ais_3dtools_ros_utility
+        angles
         cmake_modules
         dynamic_reconfigure
         geometry_msgs
@@ -32,6 +33,7 @@ catkin_package(
     CATKIN_DEPENDS
         actionlib
         ais_3dtools_ros_utility
+        angles
         dynamic_reconfigure
         geometry_msgs
         pluginlib
