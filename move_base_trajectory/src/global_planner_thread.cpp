@@ -39,6 +39,7 @@ bool GlobalPlannerThread::computeTrajectory(const geometry_msgs::PoseStamped & s
 {
     // start thread, send goal to planner
     moveit_msgs::DisplayTrajectory trajectory; // TODO do we still need this in the global planner?
+    // TODO check that no thread is running
     _plannerThread = boost::thread(boost::bind(&BaseGlobalPlannerTrajectory::makeTrajectory, _globalPlanner, start, goal, trajectory));
 }
 

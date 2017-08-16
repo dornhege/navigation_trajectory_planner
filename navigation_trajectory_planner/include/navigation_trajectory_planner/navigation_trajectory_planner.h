@@ -92,7 +92,7 @@ protected:
     nav_msgs::Path trajectoryToGuiPath(const moveit_msgs::RobotTrajectory & traj) const;
 
     virtual void fillGrid(nav_msgs::OccupancyGrid & grid, const std::vector< std::set<int> > & gridDirections, int maxDirections);
-
+    void rememberDisplayTrajectoryFromStateIdPath(const std::vector<int> & path, const double cost);
 protected:
     bool initialized_;
     ros::NodeHandle* private_nh_;
@@ -105,7 +105,10 @@ protected:
     double initial_epsilon_;
     int force_scratch_limit_;   ///< if the number of changed cells is >= this, planning from scratch will happen
 
-    //costmap_2d::Costmap2DROS* costmap_ros_;
+    moveit_msgs::DisplayTrajectory current_best_trajectory_;
+    double current_best_cost_;
+    mutable boost::mutex trajectory_mutex_;
+    mutable boost::mutex cost_mutex_;
 
     ros::Publisher plan_pub_;
     ros::Publisher traj_pub_;

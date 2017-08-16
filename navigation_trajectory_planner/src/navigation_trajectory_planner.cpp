@@ -129,6 +129,7 @@ bool NavigationTrajectoryPlanner::createPlanner()
         ROS_INFO("Planning with ARA*");
         planner_ = new ARAPlanner(env_, forward_search);
         dynamic_cast<ARAPlanner*>(planner_)->set_track_expansions(track_expansions);
+        planner_->set_path_callback(boost::bind(&NavigationTrajectoryPlanner::rememberDisplayTrajectoryFromStateIdPath, this, _1, _2));
         /*} else if(planner_type == "ADPlanner") {
         ROS_INFO("Planning with AD*");
         planner_ = new ADPlanner(env_, forward_search);*/
@@ -539,10 +540,14 @@ bool NavigationTrajectoryPlanner::getCurrentBestTrajectory(moveit_msgs::DisplayT
         return false;
     }
     std::vector<int> bestStateIds;
-    double bestCost;
-    planner_->current_best_path(bestStateIds, bestCost);
+    cost_mutex_.lock();
+    double bestCost = current_best_cost_;
+    cost_mutex_.unlock();
+
     if(bestCost < INFINITECOST){
-        dtraj = env_->stateIDPathToDisplayTrajectory(bestStateIds);
+        trajectory_mutex_.lock();
+        dtraj = current_best_trajectory_;
+        trajectory_mutex_.unlock();
         if(dtraj.trajectory.empty()){
             ROS_WARN("The computed trajectory is empty!");
             return false;
@@ -551,5 +556,19 @@ bool NavigationTrajectoryPlanner::getCurrentBestTrajectory(moveit_msgs::DisplayT
     }
     return false;
 }
+
+void NavigationTrajectoryPlanner::rememberDisplayTrajectoryFromStateIdPath(const std::vector<int> & path, const double cost)
+{
+    boost::mutex::scoped_lock lock(trajectory_mutex_);
+    if(env_){
+        current_best_trajectory_ = env_->stateIDPathToDisplayTrajectory(path);
+    }else{
+        ROS_ERROR("Environment is non existent!");
+    }
+
+    boost::mutex::scoped_lock lock2(cost_mutex_);
+    current_best_cost_ = cost;
 }
 
+
+}

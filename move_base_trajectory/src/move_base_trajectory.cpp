@@ -116,7 +116,7 @@ MoveBaseTrajectory::GlobalTrajectoryComputationResult MoveBaseTrajectory::comput
     while(_globalPlanner.isComputing()) {   // TODO true = not preempt, timeout, whatever
         if(_actionServer->isPreemptRequested()){
             ROS_INFO("The planner was asked to stop.");
-            // TODO stop global planner?
+            _globalPlanner.stopTrajectoryComputation();
             _actionServer->setPreempted();
             return GTCR_PREEMPTED;
         }
@@ -137,7 +137,6 @@ MoveBaseTrajectory::GlobalTrajectoryComputationResult MoveBaseTrajectory::update
         moveit_msgs::DisplayTrajectory dtraj;
         if(_globalPlanner.getBestTrajectory(dtraj)) {
             ROS_INFO("got a trajectory.");
-            // TODO publish dtraj
             _trajectoryPub.publish(dtraj);
             traj = dtraj.trajectory[0];
             result = GTCR_SUCCESS;
