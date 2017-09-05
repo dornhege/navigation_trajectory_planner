@@ -8,7 +8,7 @@ int main(int argc, char** argv)
 {
     if(argc < 2) {
         fprintf(stderr, "No costmaps filename given.\n");
-        fprintf(stderr, "Usage: print_costmap_images costmap_file [costmap expansion]\n");
+        fprintf(stderr, "Usage: print_costmap_images costmap_file [costmap expansion cells]\n");
         fprintf(stderr, "Note: Expansion will be done with Euclidean append. If a negative value is given Euclidean prepend is used.\n");
         return 1;
     }
