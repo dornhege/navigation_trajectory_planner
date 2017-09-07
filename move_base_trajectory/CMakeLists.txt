@@ -30,6 +30,7 @@ generate_dynamic_reconfigure_options(
 catkin_package(
     INCLUDE_DIRS include
     LIBRARIES move_base_interfaces
+              move_base_trajectory
     CATKIN_DEPENDS
         actionlib
         ais_3dtools_ros_utility
@@ -89,6 +90,7 @@ install(
 install(
     TARGETS
         move_base_trajectory
+        move_base_interfaces
         move_base_trajectory_node
     ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
     LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}

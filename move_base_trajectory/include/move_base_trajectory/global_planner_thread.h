@@ -25,7 +25,7 @@ class GlobalPlannerThread
         bool getBestTrajectory(moveit_msgs::DisplayTrajectory & dtraj) const;
 
         /// \returns true, if the trajectory computation is still running.
-        bool isComputing();
+        bool isComputing() const;
 
         /// Start computation of a trajectory to a new goal.
         /**
@@ -49,7 +49,7 @@ class GlobalPlannerThread
     protected: 
         boost::shared_ptr<move_base_trajectory::BaseGlobalPlannerTrajectory> _globalPlanner;
         pluginlib::ClassLoader<move_base_trajectory::BaseGlobalPlannerTrajectory> _globalPlannerLoader;
-        boost::thread _plannerThread;
+        mutable boost::thread _plannerThread;
 
 };
 

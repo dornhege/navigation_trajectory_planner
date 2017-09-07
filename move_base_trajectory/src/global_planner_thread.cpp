@@ -30,9 +30,14 @@ bool GlobalPlannerThread::getBestTrajectory(moveit_msgs::DisplayTrajectory & tra
     return false;
 }
 
-bool GlobalPlannerThread::isComputing()
+bool GlobalPlannerThread::isComputing() const
 {
-    return !_plannerThread.timed_join(boost::posix_time::seconds(0));
+    // HACK
+    ROS_WARN("HACK");
+    _plannerThread.join();
+    ROS_WARN("HACK, joined planner thread");
+    return false;
+    //return !_plannerThread.timed_join(boost::posix_time::seconds(0));
 }
 
 bool GlobalPlannerThread::computeTrajectory(const geometry_msgs::PoseStamped & start, const geometry_msgs::PoseStamped & goal)
