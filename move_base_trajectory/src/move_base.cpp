@@ -55,10 +55,16 @@ namespace move_base_trajectory {
     planner_plan_(NULL), latest_plan_(NULL), controller_plan_(NULL),
     runPlanner_(false), setup_(false), p_freq_change_(false), c_freq_change_(false), new_global_plan_(false) {
 
-    as_ = new MoveBaseActionServer(ros::NodeHandle(), "move_base", boost::bind(&MoveBase::executeCb, this, _1), false);
+    as_ = new MoveBaseActionServer(ros::NodeHandle(), "move_base", boost::bind(&MoveBase::executeCbGeoPose, this, _1), false);
 
     ros::NodeHandle private_nh("~");
     ros::NodeHandle nh;
+
+    gps_reference_ = new gps_reference::GpsReference();
+    if(!gps_reference_->gpsReferenceInitialized()){
+        ROS_FATAL("Could not initialize GPS reference. Did you upload the GPS reference parameters?");
+        exit(1);
+    }
 
     recovery_trigger_ = PLANNING_R;
 
@@ -86,16 +92,16 @@ namespace move_base_trajectory {
 
     //for comanding the base
     vel_pub_ = nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
-    current_goal_pub_ = private_nh.advertise<geometry_msgs::PoseStamped>("current_goal", 0 );
+    current_goal_pub_ = private_nh.advertise<geometry_msgs::PoseStamped>("global_goal", 0 );
 
     ros::NodeHandle action_nh("move_base");
-    action_goal_pub_ = action_nh.advertise<move_base_msgs::MoveBaseActionGoal>("goal", 1);
+    action_goal_pub_ = action_nh.advertise<bonirob_navigation_msgs::MoveBaseGeoPoseActionGoal>("goal", 1);
 
     //we'll provide a mechanism for some people to send goals as PoseStamped messages over a topic
     //they won't get any useful information back about its status, but this is useful for tools
     //like nav_view and rviz
     ros::NodeHandle simple_nh("move_base_simple");
-    goal_sub_ = simple_nh.subscribe<geometry_msgs::PoseStamped>("goal", 1, boost::bind(&MoveBase::goalCB, this, _1));
+    goal_sub_ = simple_nh.subscribe("goal", 1, &MoveBase::goalCB, this);
 
     //we'll assume the radius of the robot to be consistent with what's specified for the costmaps
     private_nh.param("local_costmap/inscribed_radius", inscribed_radius_, 0.325);
@@ -313,11 +319,12 @@ namespace move_base_trajectory {
     last_config_ = config;
   }
 
-  void MoveBase::goalCB(const geometry_msgs::PoseStamped::ConstPtr& goal){
+  void MoveBase::goalCB(const geometry_msgs::PoseStamped& goal){
     ROS_DEBUG_NAMED("move_base","In ROS goal callback, wrapping the PoseStamped in the action message and re-sending to the server.");
-    move_base_msgs::MoveBaseActionGoal action_goal;
+
+    bonirob_navigation_msgs::MoveBaseGeoPoseActionGoal action_goal;
     action_goal.header.stamp = ros::Time::now();
-    action_goal.goal.target_pose = *goal;
+    action_goal.goal.target_pose = gps_reference_->getGlobalPose(goal);
 
     action_goal_pub_.publish(action_goal);
   }
@@ -704,14 +711,21 @@ namespace move_base_trajectory {
     }
   }
 
-  void MoveBase::executeCb(const move_base_msgs::MoveBaseGoalConstPtr& move_base_goal)
+  void MoveBase::executeCbGeoPose(const bonirob_navigation_msgs::MoveBaseGeoPoseGoalConstPtr& goal)
   {
-    if(!isQuaternionValid(move_base_goal->target_pose.pose.orientation)){
-      as_->setAborted(move_base_msgs::MoveBaseResult(), "Aborting on goal because it was sent with an invalid quaternion");
+      geometry_msgs::PoseStamped target_pose = geoPoseGoalToPoseStamped(goal);
+      // TODO publish goal marker
+      executeCb(target_pose);
+  }
+
+  void MoveBase::executeCb(const geometry_msgs::PoseStamped& target_pose)
+  {
+    if(!isQuaternionValid(target_pose.pose.orientation)){
+      as_->setAborted(bonirob_navigation_msgs::MoveBaseGeoPoseResult(), "Aborting on goal because it was sent with an invalid quaternion");
       return;
     }
 
-    geometry_msgs::PoseStamped goal = goalToGlobalFrame(move_base_goal->target_pose);
+    geometry_msgs::PoseStamped goal = goalToGlobalFrame(target_pose);
 
     //we have a goal so start the planner
     boost::unique_lock<boost::mutex> lock(planner_mutex_);
@@ -748,14 +762,14 @@ namespace move_base_trajectory {
       if(as_->isPreemptRequested()){
         if(as_->isNewGoalAvailable()){
           //if we're active and a new goal is available, we'll accept it, but we won't shut anything down
-          move_base_msgs::MoveBaseGoal new_goal = *as_->acceptNewGoal();
+          bonirob_navigation_msgs::MoveBaseGeoPoseGoalConstPtr new_goal = as_->acceptNewGoal();
+          geometry_msgs::PoseStamped new_goal_pose = geoPoseGoalToPoseStamped(new_goal);
+          goal = goalToGlobalFrame(new_goal_pose);
 
-          if(!isQuaternionValid(new_goal.target_pose.pose.orientation)){
-            as_->setAborted(move_base_msgs::MoveBaseResult(), "Aborting on goal because it was sent with an invalid quaternion");
+          if(!isQuaternionValid(goal.pose.orientation)){
+            as_->setAborted(bonirob_navigation_msgs::MoveBaseGeoPoseResult(), "Aborting on goal because it was sent with an invalid quaternion");
             return;
           }
-
-          goal = goalToGlobalFrame(new_goal.target_pose);
 
           //we'll make sure that we reset our state for the next execution cycle
           recovery_index_ = 0;
@@ -843,8 +857,13 @@ namespace move_base_trajectory {
     lock.unlock();
 
     //if the node is killed then we'll abort and return
-    as_->setAborted(move_base_msgs::MoveBaseResult(), "Aborting on the goal because the node has been killed");
+    as_->setAborted(bonirob_navigation_msgs::MoveBaseGeoPoseResult(), "Aborting on the goal because the node has been killed");
     return;
+  }
+
+  geometry_msgs::PoseStamped MoveBase::geoPoseGoalToPoseStamped(const bonirob_navigation_msgs::MoveBaseGeoPoseGoalConstPtr& goal)
+  {
+      return gps_reference_->getGpsReferencedPose(goal->target_pose);
   }
 
   double MoveBase::distance(const geometry_msgs::PoseStamped& p1, const geometry_msgs::PoseStamped& p2)
@@ -864,8 +883,8 @@ namespace move_base_trajectory {
     tf::poseStampedTFToMsg(global_pose, current_position);
 
     //push the feedback out
-    move_base_msgs::MoveBaseFeedback feedback;
-    feedback.base_position = current_position;
+    bonirob_navigation_msgs::MoveBaseGeoPoseFeedback feedback;
+    feedback.base_position = gps_reference_->getGlobalPose(current_position);
     as_->publishFeedback(feedback);
 
     //check to see if we've moved far enough to reset our oscillation timeout
@@ -912,7 +931,7 @@ namespace move_base_trajectory {
         runPlanner_ = false;
         lock.unlock();
 
-        as_->setAborted(move_base_msgs::MoveBaseResult(), "Failed to pass global plan to the controller.");
+        as_->setAborted(bonirob_navigation_msgs::MoveBaseGeoPoseResult(), "Failed to pass global plan to the controller.");
         return true;
       }
 
@@ -947,7 +966,7 @@ namespace move_base_trajectory {
           runPlanner_ = false;
           lock.unlock();
 
-          as_->setSucceeded(move_base_msgs::MoveBaseResult(), "Goal reached.");
+          as_->setSucceeded(bonirob_navigation_msgs::MoveBaseGeoPoseResult(), "Goal reached.");
           return true;
         }
 
@@ -1029,15 +1048,15 @@ namespace move_base_trajectory {
 
           if(recovery_trigger_ == CONTROLLING_R){
             ROS_ERROR("Aborting because a valid control could not be found. Even after executing all recovery behaviors");
-            as_->setAborted(move_base_msgs::MoveBaseResult(), "Failed to find a valid control. Even after executing recovery behaviors.");
+            as_->setAborted(bonirob_navigation_msgs::MoveBaseGeoPoseResult(), "Failed to find a valid control. Even after executing recovery behaviors.");
           }
           else if(recovery_trigger_ == PLANNING_R){
             ROS_ERROR("Aborting because a valid plan could not be found. Even after executing all recovery behaviors");
-            as_->setAborted(move_base_msgs::MoveBaseResult(), "Failed to find a valid plan. Even after executing recovery behaviors.");
+            as_->setAborted(bonirob_navigation_msgs::MoveBaseGeoPoseResult(), "Failed to find a valid plan. Even after executing recovery behaviors.");
           }
           else if(recovery_trigger_ == OSCILLATION_R){
             ROS_ERROR("Aborting because the robot appears to be oscillating over and over. Even after executing all recovery behaviors");
-            as_->setAborted(move_base_msgs::MoveBaseResult(), "Robot is oscillating. Even after executing recovery behaviors.");
+            as_->setAborted(bonirob_navigation_msgs::MoveBaseGeoPoseResult(), "Robot is oscillating. Even after executing recovery behaviors.");
           }
           resetState();
           return true;
@@ -1050,7 +1069,7 @@ namespace move_base_trajectory {
         boost::unique_lock<boost::mutex> lock(planner_mutex_);
         runPlanner_ = false;
         lock.unlock();
-        as_->setAborted(move_base_msgs::MoveBaseResult(), "Reached a case that should not be hit in move_base. This is a bug, please report it.");
+        as_->setAborted(bonirob_navigation_msgs::MoveBaseGeoPoseResult(), "Reached a case that should not be hit in move_base. This is a bug, please report it.");
         return true;
     }
 

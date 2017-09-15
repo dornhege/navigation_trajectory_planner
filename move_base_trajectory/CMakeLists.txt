@@ -3,7 +3,10 @@ project(move_base_trajectory)
 
 find_package(catkin REQUIRED
     COMPONENTS
+        bonirob_navigation_msgs
         cmake_modules
+        geometry_msgs
+        gps_reference
         roscpp
         pluginlib
         actionlib
