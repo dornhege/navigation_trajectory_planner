@@ -67,7 +67,7 @@ void NavigationTrajectoryPlanner::initialize(std::string name, costmap_2d::Costm
     }
 
     ROS_INFO("sbpl_xytheta_planner: Initialized successfully");
-    plan_pub_ = private_nh_->advertise<nav_msgs::Path>("plan", 1);
+    plan_pub_ = private_nh_->advertise<nav_msgs::Path>("plan", 1, true);
     stats_publisher_ = private_nh_->advertise<navigation_trajectory_msgs::PlannerStats>("planner_stats", 10);
     traj_pub_ = private_nh_->advertise<moveit_msgs::DisplayTrajectory>("trajectory", 5);
 
