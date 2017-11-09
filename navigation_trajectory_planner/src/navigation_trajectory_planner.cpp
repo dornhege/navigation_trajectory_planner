@@ -1,5 +1,5 @@
 #include "navigation_trajectory_planner/navigation_trajectory_planner.h"
-#include "color_tools/color_tools.h"
+#include "color_tools_ros/color_tools_ros.h"
 #include "navigation_trajectory_msgs/PlannerStats.h"
 
 #include <sbpl/planners/planner.h>
@@ -381,7 +381,7 @@ void NavigationTrajectoryPlanner::publish_expansions()
     mark.scale.z = 0.01;
     mark.color.a = 0.1;
     mark.header.frame_id = getPlanningFrame();
-    color_tools::HSV hsv;
+    ais_lib::HSV hsv;
     hsv.s = 1.0;
     hsv.v = 1.0;
     for(int iteration = 0; iteration < exp_states.size(); iteration++) {
@@ -389,7 +389,7 @@ void NavigationTrajectoryPlanner::publish_expansions()
         ss << "expansions_" << std::setfill('0') << std::setw(2) << iteration;
         mark.ns = ss.str();
         hsv.h = 300.0 * (1.0 - 1.0*iteration/exp_states.size());
-        color_tools::convert(hsv, mark.color);
+        ais_lib::convert(hsv, mark.color);
         int state = 0;
         mark.action = visualization_msgs::Marker::ADD;
         for(; state < exp_states[iteration].size(); state++) {
@@ -409,7 +409,7 @@ void NavigationTrajectoryPlanner::publish_expansions()
         ss << "generated_" << std::setfill('0') << std::setw(2) << iteration;
         mark.ns = ss.str();
         hsv.h = 300.0 * (1.0 - 1.0*iteration/gen_states.size());
-        color_tools::convert(hsv, mark.color);
+        ais_lib::convert(hsv, mark.color);
         int state = 0;
         mark.action = visualization_msgs::Marker::ADD;
         for(; state < gen_states[iteration].size(); state++) {

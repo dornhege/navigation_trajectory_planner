@@ -6,7 +6,7 @@ project(navigation_trajectory_planner)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   angles
-  color_tools
+  color_tools_ros
   freespace_mechanism_heuristic
   geometry_msgs
   message_generation
@@ -92,7 +92,7 @@ catkin_package(
   INCLUDE_DIRS include
   LIBRARIES navigation_trajectory_planner
   CATKIN_DEPENDS angles
-    color_tools
+    color_tools_ros
     freespace_mechanism_heuristic
     geometry_msgs
     message_runtime
