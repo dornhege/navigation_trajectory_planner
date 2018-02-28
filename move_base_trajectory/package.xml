@@ -16,12 +16,15 @@
     <buildtool_depend>catkin</buildtool_depend>
 
     <build_depend>actionlib</build_depend>
-    <build_depend>ais_3dtools_ros_utility</build_depend>
+    <build_depend>ais_rosparam_tools</build_depend>
+    <build_depend>ais_ros_msg_conversions</build_depend>
     <build_depend>angles</build_depend>
+    <build_depend>bonirob_navigation_msgs</build_depend>
     <build_depend>cmake_modules</build_depend>
     <build_depend>costmap_2d</build_depend>
     <build_depend>dynamic_reconfigure</build_depend>
     <build_depend>geometry_msgs</build_depend>
+    <build_depend>gps_reference</build_depend>
     <build_depend>message_generation</build_depend>
     <build_depend>move_base_msgs</build_depend>
     <build_depend>moveit_msgs</build_depend>
@@ -50,11 +53,14 @@
 <!--  This is commented out until rotate_recovery is ported to layered costmaps. <build_depend>rotate_recovery</build_depend> -->
 
     <run_depend>actionlib</run_depend>
-    <run_depend>ais_3dtools_ros_utility</run_depend>
+    <run_depend>ais_rosparam_tools</run_depend>
+    <run_depend>ais_ros_msg_conversions</run_depend>
     <run_depend>angles</run_depend>
+    <run_depend>bonirob_navigation_msgs</run_depend>
     <run_depend>costmap_2d</run_depend>
     <run_depend>dynamic_reconfigure</run_depend>
     <run_depend>geometry_msgs</run_depend>
+    <run_depend>gps_reference</run_depend>
     <run_depend>message_runtime</run_depend>
     <run_depend>move_base_msgs</run_depend>
     <run_depend>nav_core</run_depend>

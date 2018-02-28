@@ -44,6 +44,7 @@
 
 #include <actionlib/server/simple_action_server.h>
 #include <move_base_msgs/MoveBaseAction.h>
+#include <bonirob_navigation_msgs/MoveBaseGeoPoseAction.h>
 
 #include <move_base_trajectory/base_local_planner.h>
 #include <move_base_trajectory/base_global_planner.h>
@@ -52,6 +53,7 @@
 #include <costmap_2d/costmap_2d_ros.h>
 #include <costmap_2d/costmap_2d.h>
 #include <nav_msgs/GetPlan.h>
+#include <gps_reference/gps_reference.h>
 
 #include <pluginlib/class_loader.h>
 #include <std_srvs/Empty.h>
@@ -62,7 +64,7 @@
 
 namespace move_base_trajectory {
   //typedefs to help us out with the action server so that we don't hace to type so much
-  typedef actionlib::SimpleActionServer<move_base_msgs::MoveBaseAction> MoveBaseActionServer;
+  typedef actionlib::SimpleActionServer<bonirob_navigation_msgs::MoveBaseGeoPoseAction> MoveBaseActionServer;
   typedef moveit_msgs::RobotTrajectory PlanType;
 
   enum MoveBaseState {
@@ -162,11 +164,14 @@ namespace move_base_trajectory {
       void clearPlans();
       size_t planSize(const PlanType & plan);
 
-      void goalCB(const geometry_msgs::PoseStamped::ConstPtr& goal);
+      void goalCB(const geometry_msgs::PoseStamped& goal);
 
       void planThread();
 
-      void executeCb(const move_base_msgs::MoveBaseGoalConstPtr& move_base_goal);
+      void executeCb(const geometry_msgs::PoseStamped& target_pose);
+      void executeCbGeoPose(const bonirob_navigation_msgs::MoveBaseGeoPoseGoalConstPtr& move_base_goal);
+
+      geometry_msgs::PoseStamped geoPoseGoalToPoseStamped(const bonirob_navigation_msgs::MoveBaseGeoPoseGoalConstPtr& goal);
 
       bool isQuaternionValid(const geometry_msgs::Quaternion& q);
 
@@ -233,6 +238,8 @@ namespace move_base_trajectory {
       move_base::MoveBaseConfig default_config_;
       bool setup_, p_freq_change_, c_freq_change_;
       bool new_global_plan_;
+
+      gps_reference::GpsReference* gps_reference_;
   };
 };
 #endif

@@ -385,7 +385,7 @@ void NavigationTrajectoryPlanner::publish_expansions()
     mark.scale.y = 0.01;
     mark.scale.z = 0.01;
     mark.color.a = 0.1;
-    mark.header.frame_id = getPlanningFrame();
+    mark.header.frame_id = planningFrame();
     ais_lib::HSV hsv;
     hsv.s = 1.0;
     hsv.v = 1.0;

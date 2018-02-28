@@ -4,11 +4,14 @@ project(move_base_trajectory)
 find_package(catkin REQUIRED
     COMPONENTS
         actionlib
-        ais_3dtools_ros_utility
+        ais_rosparam_tools
+        ais_ros_msg_conversions
         angles
+        bonirob_navigation_msgs
         cmake_modules
         dynamic_reconfigure
         geometry_msgs
+	gps_reference
         message_generation
         moveit_msgs
 #        nav_core
@@ -33,7 +36,8 @@ catkin_package(
               move_base_trajectory
     CATKIN_DEPENDS
         actionlib
-        ais_3dtools_ros_utility
+        ais_rosparam_tools
+        ais_ros_msg_conversions
         angles
         dynamic_reconfigure
         geometry_msgs

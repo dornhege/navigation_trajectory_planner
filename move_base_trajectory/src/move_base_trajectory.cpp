@@ -1,7 +1,8 @@
 #include "move_base_trajectory/move_base_trajectory.h"
 
 #include <angles/angles.h>
-#include <ais_3dtools_ros_utility/ros_utils.h>
+#include <ais_rosparam_tools/load_ros_parameters.h>
+#include <ais_ros_msg_conversions/tf_msg_conversions.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 namespace move_base_trajectory
@@ -15,7 +16,7 @@ MoveBaseTrajectory::MoveBaseTrajectory(tf2_ros::Buffer & tf) : _tf(tf), _actionS
     _trajectoryPub = nh.advertise<moveit_msgs::DisplayTrajectory>("trajectory", 3);
 
     ros::NodeHandle privateNh("~");
-    ais_3dtools_ros_utility::checkAndLoadParameter(privateNh, "base_frame", _baseFrame, true);
+    ais_rosparam_tools::checkAndLoadParameter(privateNh, "base_frame", _baseFrame, true);
     _actionServer->start();
 }
 
@@ -55,7 +56,7 @@ void MoveBaseTrajectory::executeCallback(const move_base_msgs::MoveBaseGoalConst
                 //}
   
             geometry_msgs::PoseStamped planningStartPose;
-            ais_3dtools_ros_utility::TransformToPose(planningStartTf, planningStartPose);
+            ais_ros_msg_conversions::TransformToPose(planningStartTf, planningStartPose);
 
             //tf2::convert<geometry_msgs::TransformStamped, geometry_msgs::PoseStamped>(planningStartTf, planningStartPose);
             enum GlobalTrajectoryComputationResult res = computeGlobalTrajectory(
