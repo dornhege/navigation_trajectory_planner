@@ -40,7 +40,6 @@ public:
         delete private_nh_;
     }
 
-    //virtual void initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
     virtual void initialize(std::string name);
 
     /// Main query from move_base
@@ -97,7 +96,6 @@ protected:
     bool initialized_;
     ros::NodeHandle* private_nh_;
 
-    //SBPLPlanner* planner_;
     ARAPlanner* planner_;
     EnvironmentNavXYThetaLatGeneric* env_;
 
@@ -107,8 +105,7 @@ protected:
 
     moveit_msgs::DisplayTrajectory current_best_trajectory_;
     double current_best_cost_;
-    mutable boost::mutex trajectory_mutex_;
-    mutable boost::mutex cost_mutex_;
+    mutable boost::mutex trajectory_mutex_; // locks current_best_trajectory_ and current_best_cost_
 
     ros::Publisher plan_pub_;
     ros::Publisher traj_pub_;

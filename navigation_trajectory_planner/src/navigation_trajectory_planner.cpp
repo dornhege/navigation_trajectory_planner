@@ -40,13 +40,12 @@ const std::vector<int> * XYThetaStateChangeQuery::getSuccessors() const
 }
 
 NavigationTrajectoryPlanner::NavigationTrajectoryPlanner() :
-    initialized_(false), //costmap_ros_(NULL), 
+    initialized_(false), 
     initial_epsilon_(0),
     env_(NULL), force_scratch_limit_(0), planner_(NULL), allocated_time_(0)
 {
 }
 
-//void NavigationTrajectoryPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros)
 void NavigationTrajectoryPlanner::initialize(std::string name)
 {
     if(initialized_)
@@ -54,7 +53,6 @@ void NavigationTrajectoryPlanner::initialize(std::string name)
 
     ROS_INFO("Planner Name is %s", name.c_str());
     private_nh_ = new ros::NodeHandle("~/" + name);
-    //costmap_ros_ = costmap_ros;
 
     readDynamicParameters();
 
@@ -67,7 +65,7 @@ void NavigationTrajectoryPlanner::initialize(std::string name)
         exit(1);
     }
 
-    ROS_INFO("sbpl_xytheta_planner: Initialized successfully");
+    ROS_INFO("navigation_trajectory_planner: Initialized successfully");
     plan_pub_ = private_nh_->advertise<nav_msgs::Path>("plan", 1, true);
     stats_publisher_ = private_nh_->advertise<navigation_trajectory_msgs::PlannerStats>("planner_stats", 10);
     traj_pub_ = private_nh_->advertise<moveit_msgs::DisplayTrajectory>("trajectory", 5);
@@ -128,13 +126,9 @@ bool NavigationTrajectoryPlanner::createPlanner()
     if(planner_type == "ARAPlanner") {
         ROS_INFO("Planning with ARA*");
         planner_ = new ARAPlanner(env_, forward_search);
-        dynamic_cast<ARAPlanner*>(planner_)->set_track_expansions(track_expansions);
+        planner_->set_track_expansions(track_expansions);
         planner_->set_path_callback(boost::bind(&NavigationTrajectoryPlanner::rememberDisplayTrajectoryFromStateIdPath, this, _1, _2));
-        /*} else if(planner_type == "ADPlanner") {
-        ROS_INFO("Planning with AD*");
-        planner_ = new ADPlanner(env_, forward_search);*/
     } else {
-        //ROS_ERROR("Unknown planner type: %s (supported: ARAPlanner or ADPlanner)", planner_type.c_str());
         ROS_ERROR("Unknown planner type: %s (supported: ARAPlanner)", planner_type.c_str());
         return false;
     }
@@ -540,14 +534,11 @@ bool NavigationTrajectoryPlanner::getCurrentBestTrajectory(moveit_msgs::DisplayT
         return false;
     }
     std::vector<int> bestStateIds;
-    cost_mutex_.lock();
+    boost::mutex::scoped_lock lock(trajectory_mutex_);
     double bestCost = current_best_cost_;
-    cost_mutex_.unlock();
 
     if(bestCost < INFINITECOST){
-        trajectory_mutex_.lock();
         dtraj = current_best_trajectory_;
-        trajectory_mutex_.unlock();
         if(dtraj.trajectory.empty()){
             ROS_WARN("The computed trajectory is empty!");
             return false;
@@ -566,7 +557,6 @@ void NavigationTrajectoryPlanner::rememberDisplayTrajectoryFromStateIdPath(const
         ROS_ERROR("Environment is non existent!");
     }
 
-    boost::mutex::scoped_lock lock2(cost_mutex_);
     current_best_cost_ = cost;
 }
 

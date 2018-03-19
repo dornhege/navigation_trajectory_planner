@@ -26,7 +26,7 @@ MoveBaseTrajectory::~MoveBaseTrajectory()
 
 void MoveBaseTrajectory::executeCallback(const move_base_msgs::MoveBaseGoalConstPtr & goal)
 {
-    // check move base aciton is inactive
+    // check move base action is inactive
     // disable planner + local planenr
     ROS_INFO_STREAM("New move base call with goal " << goal->target_pose.pose.position.x 
                     << " " << goal->target_pose.pose.position.y
