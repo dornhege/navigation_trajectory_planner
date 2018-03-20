@@ -77,6 +77,7 @@ void NavigationTrajectoryPlanner::initialize(std::string name)
     pub_generation_map_ = private_nh_->advertise<nav_msgs::OccupancyGrid>("generation_map", 3, true);
     pub_expansion_first_map_ = private_nh_->advertise<nav_msgs::OccupancyGrid>("expansion_first_map", 3, true);
     pub_generation_first_map_ = private_nh_->advertise<nav_msgs::OccupancyGrid>("generation_first_map", 3, true);
+    pub_expansion_prefix_ = private_nh_->advertise<nav_msgs::Path>("expansion_prefix", 3, false);
 
     srv_sample_poses_ = private_nh_->advertiseService("sample_valid_poses",
             &NavigationTrajectoryPlanner::sampleValidPoses, this);
@@ -128,6 +129,7 @@ bool NavigationTrajectoryPlanner::createPlanner()
         planner_ = new ARAPlanner(env_, forward_search);
         planner_->set_track_expansions(track_expansions);
         planner_->set_path_callback(boost::bind(&NavigationTrajectoryPlanner::rememberDisplayTrajectoryFromStateIdPath, this, _1, _2));
+        planner_->set_expanded_state_callback(boost::bind(&NavigationTrajectoryPlanner::handleNewExpandedStatePath, this, _1));
     } else {
         ROS_ERROR("Unknown planner type: %s (supported: ARAPlanner)", planner_type.c_str());
         return false;
@@ -558,6 +560,35 @@ void NavigationTrajectoryPlanner::rememberDisplayTrajectoryFromStateIdPath(const
     }
 
     current_best_cost_ = cost;
+}
+
+void NavigationTrajectoryPlanner::handleNewExpandedStatePath(const std::vector<int> & path)
+{
+    if(!env_){
+        ROS_ERROR("Environment is non existent!");
+        return;
+    }
+    std::vector<sbpl_xy_theta_pt_t> sbpl_path;
+    try {
+        env_->ConvertStateIDPathintoXYThetaPath(&path, &sbpl_path);
+        //std::cout << "found path prefix with " << sbpl_path.size() << " points from "
+        //          << path.size() << " IDs" << std::endl;
+    } catch (SBPL_Exception& e) {
+        ROS_ERROR("SBPL encountered a fatal exception while reconstructing the path");
+        return;
+    }
+    nav_msgs::Path visPath;
+    visPath.header.stamp = ros::Time::now();
+    visPath.header.frame_id = planningFrame();
+    for(size_t i = 0; i < sbpl_path.size(); ++i){
+        geometry_msgs::PoseStamped pose;
+        pose.header = visPath.header;
+        pose.pose.position.x = sbpl_path[i].x;
+        pose.pose.position.y = sbpl_path[i].y;
+        pose.pose.orientation = tf::createQuaternionMsgFromYaw(sbpl_path[i].theta);
+        visPath.poses.push_back(pose);
+    }
+    pub_expansion_prefix_.publish(visPath);
 }
 
 

@@ -13,9 +13,10 @@ MoveBaseTrajectory::MoveBaseTrajectory(tf2_ros::Buffer & tf) : _tf(tf), _actionS
     ros::NodeHandle nh;
     _actionServer = new MoveBaseActionServer(nh, "move_base",
             boost::bind(&MoveBaseTrajectory::executeCallback, this, _1), false);
-    _trajectoryPub = nh.advertise<moveit_msgs::DisplayTrajectory>("trajectory", 3);
+
 
     ros::NodeHandle privateNh("~");
+    _trajectoryPub = privateNh.advertise<moveit_msgs::DisplayTrajectory>("trajectory", 3);
     ais_rosparam_tools::checkAndLoadParameter(privateNh, "base_frame", _baseFrame, true);
     _actionServer->start();
 }

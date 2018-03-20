@@ -92,6 +92,7 @@ protected:
 
     virtual void fillGrid(nav_msgs::OccupancyGrid & grid, const std::vector< std::set<int> > & gridDirections, int maxDirections);
     void rememberDisplayTrajectoryFromStateIdPath(const std::vector<int> & path, const double cost);
+    void handleNewExpandedStatePath(const std::vector<int> & path);
 protected:
     bool initialized_;
     ros::NodeHandle* private_nh_;
@@ -117,6 +118,7 @@ protected:
     ros::Publisher pub_generation_map_;
     ros::Publisher pub_expansion_first_map_;
     ros::Publisher pub_generation_first_map_;
+    ros::Publisher pub_expansion_prefix_;
 
     ros::ServiceServer srv_sample_poses_;
 };
