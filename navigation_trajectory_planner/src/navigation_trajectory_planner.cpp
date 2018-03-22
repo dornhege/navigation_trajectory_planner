@@ -207,15 +207,10 @@ bool NavigationTrajectoryPlanner::sampleValidPoses(navigation_trajectory_msgs::S
     return resp.poses.poses.size() >= req.n;
 }
 
-bool NavigationTrajectoryPlanner::makeTrajectory(const geometry_msgs::PoseStamped& startPose,
-        const geometry_msgs::PoseStamped& goalPose,
-        moveit_msgs::DisplayTrajectory & dtraj)
-{
-    if(!initialized_) {
-        ROS_ERROR("Global planner is not initialized");
-        return false;
-    }
 
+bool NavigationTrajectoryPlanner::updateForPlanRequest(const geometry_msgs::PoseStamped& startPose,
+        const geometry_msgs::PoseStamped& goalPose)
+{
     readDynamicParameters();
     if(force_scratch_limit_ == -1) {
         ROS_INFO("force_scratch_limit_ set to -1: Hard re-creating environment and planner.");
@@ -278,30 +273,28 @@ bool NavigationTrajectoryPlanner::makeTrajectory(const geometry_msgs::PoseStampe
         return false;
     }
 
-    // Test for dynamic updates
-    XYThetaStateChangeQuery* scq = updateForPlanRequest();  // FIXME must this happen before SetStart to
-    // determine that start is valid? Or does updateForPlanRequest need a current start?
-    if(scq == NULL) {
-        planner_->force_planning_from_scratch();
-    } else {
-        try {
-            if(!scq->changedcells_.empty()) {
-                planner_->costs_changed(*scq);
-            }
-            if(scq->changedcells_.size() >= force_scratch_limit_)
-                planner_->force_planning_from_scratch();
-        } catch(SBPL_Exception& e) {
-            ROS_ERROR("SBPL failed to handle StateChangeQuery");
-            return false;
-        }
-        delete scq;
-    }
+    planner_->force_planning_from_scratch();
 
     ROS_INFO("Start state Heur: %d", env_->GetGoalHeuristic(startId));
     ROS_DEBUG("allocated time: %.1f, initial eps: %.2f\n", allocated_time_, initial_epsilon_);
     planner_->set_initialsolution_eps(initial_epsilon_);
     planner_->set_search_mode(false);
     found_prefix_ = false;
+    
+    planner_->reset_for_replan(allocated_time_);
+
+    return true;
+}
+
+bool NavigationTrajectoryPlanner::makeTrajectory(const geometry_msgs::PoseStamped& start,
+                                                 const geometry_msgs::PoseStamped& goal, 
+                                                 moveit_msgs::DisplayTrajectory & dtraj)
+{
+    if(!initialized_) {
+        ROS_ERROR("Global planner is not initialized");
+        return false;
+    }
+    ROS_INFO("making trajectory in navigation trajectory planner");
 
     ROS_DEBUG("Running planner");
     std::vector<int> solution_stateIDs;
@@ -540,7 +533,6 @@ bool NavigationTrajectoryPlanner::getCurrentBestTrajectory(moveit_msgs::DisplayT
     if(!foundTrajectory()){
         return false;
     }
-    std::vector<int> bestStateIds;
     boost::mutex::scoped_lock lock(trajectory_mutex_);
     double bestCost = current_best_cost_;
 
@@ -553,6 +545,26 @@ bool NavigationTrajectoryPlanner::getCurrentBestTrajectory(moveit_msgs::DisplayT
         return true;
     }
     return false;
+}
+
+bool NavigationTrajectoryPlanner::foundPrefix() const
+{
+    return found_prefix_;
+}
+
+bool NavigationTrajectoryPlanner::getCurrentBestPrefix(moveit_msgs::DisplayTrajectory & dtraj) const
+{
+    if(!foundPrefix()){
+        return false;
+    }
+    boost::mutex::scoped_lock lock(prefix_mutex_);
+
+    dtraj = current_best_prefix_;
+    if(dtraj.trajectory.empty()){
+        ROS_WARN("The computed trajectory is empty!");
+        return false;
+    }
+    return true;
 }
 
 void NavigationTrajectoryPlanner::rememberDisplayTrajectoryFromStateIdPath(const std::vector<int> & path, const double cost)
@@ -617,6 +629,8 @@ void NavigationTrajectoryPlanner::handleNewExpandedStatePath(const std::vector<i
             ROS_INFO_STREAM("Found prefix of length " << sbpl_path.size()
                             << ", startx = " << x_d << ", starty = " << y_d << ", endx = " << sbpl_path.back().x << ", endy = " << sbpl_path.back().y
                             << " with dist " << hypot(x_d - sbpl_path.back().x, y_d - sbpl_path.back().y));
+            boost::mutex::scoped_lock lock(prefix_mutex_);
+            current_best_prefix_ = env_->stateIDPathToDisplayTrajectory(path);
             pub_chosen_prefix_.publish(visPath);
         }
     }

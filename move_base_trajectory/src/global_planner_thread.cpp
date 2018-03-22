@@ -30,14 +30,22 @@ bool GlobalPlannerThread::getBestTrajectory(moveit_msgs::DisplayTrajectory & tra
     return false;
 }
 
+bool GlobalPlannerThread::getBestPrefix(moveit_msgs::DisplayTrajectory & traj) const
+{
+    if(foundPrefix()){
+        return _globalPlanner->getCurrentBestPrefix(traj);
+    }
+    return false;
+}
+
 bool GlobalPlannerThread::isComputing() const
 {
     // HACK
-    ROS_WARN("HACK");
-    _plannerThread.join();
-    ROS_WARN("HACK, joined planner thread");
-    return false;
-    //return !_plannerThread.timed_join(boost::posix_time::seconds(0));
+    //ROS_WARN("HACK");
+    //_plannerThread.join();
+    //ROS_WARN("HACK, joined planner thread");
+    //return false;
+    return !_plannerThread.timed_join(boost::posix_time::seconds(0));
 }
 
 bool GlobalPlannerThread::computeTrajectory(const geometry_msgs::PoseStamped & start, const geometry_msgs::PoseStamped & goal)
@@ -45,12 +53,24 @@ bool GlobalPlannerThread::computeTrajectory(const geometry_msgs::PoseStamped & s
     // start thread, send goal to planner
     moveit_msgs::DisplayTrajectory trajectory; // TODO do we still need this in the global planner?
     // TODO check that no thread is running
+    if(!_globalPlanner->updateForPlanRequest(start, goal)){
+        ROS_WARN("Could not update planner for new request.");
+        return false;
+    }
+    ROS_INFO("starting planner thread");
     _plannerThread = boost::thread(boost::bind(&BaseGlobalPlannerTrajectory::makeTrajectory, _globalPlanner, start, goal, trajectory));
+    ROS_INFO("started planner thread");
+    return true;
 }
 
 bool GlobalPlannerThread::foundTrajectory() const
 {
     return _globalPlanner->foundTrajectory();
+}
+
+bool GlobalPlannerThread::foundPrefix() const
+{
+    return _globalPlanner->foundPrefix();
 }
 
 void GlobalPlannerThread::stopTrajectoryComputation()

@@ -24,6 +24,8 @@ class GlobalPlannerThread
          */
         bool getBestTrajectory(moveit_msgs::DisplayTrajectory & dtraj) const;
 
+        bool getBestPrefix(moveit_msgs::DisplayTrajectory & dtraj) const;
+
         /// \returns true, if the trajectory computation is still running.
         bool isComputing() const;
 
@@ -37,6 +39,8 @@ class GlobalPlannerThread
 
         /// \returns true, if there is a trajectory found by the planner.
         bool foundTrajectory() const;
+
+        bool foundPrefix() const;
 
         /// Blocks until the current computation is halted (or none is running).
         void stopTrajectoryComputation();

@@ -43,7 +43,9 @@ public:
     virtual void initialize(std::string name);
 
     /// Main query from move_base
-    virtual bool makeTrajectory(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, moveit_msgs::DisplayTrajectory & dtraj);
+    virtual bool makeTrajectory(const geometry_msgs::PoseStamped& startPose,
+                                const geometry_msgs::PoseStamped& goalPose, 
+                                moveit_msgs::DisplayTrajectory & dtraj);
 
     /// Returns the frame that all planning is happening in.
     /**
@@ -56,8 +58,10 @@ public:
     virtual void readDynamicParameters();
 
     virtual bool foundTrajectory() const;
+    virtual bool foundPrefix() const;
 
     virtual bool getCurrentBestTrajectory(moveit_msgs::DisplayTrajectory & dtraj) const;
+    virtual bool getCurrentBestPrefix(moveit_msgs::DisplayTrajectory & dtraj) const;
 protected:
     virtual bool sampleValidPoses(navigation_trajectory_msgs::SampleValidPoses::Request & req, navigation_trajectory_msgs::SampleValidPoses::Response & resp);
 
@@ -73,16 +77,7 @@ protected:
             double trans_vel, double timeToTurn45Degs, const std::string & motion_primitive_filename) = 0;
 
     /// Update internal representation of the planner for a plan request.
-    /**
-     * Called, whenever makePlan is called. Start and Goal state have already been set and
-     * env_->updateForPlanRequest() has also been called.
-     *
-     * This object will be deleted after the query.
-     *
-     * If possible should return a XYThetaStateChangeQuery that can be passed to the search algorithm.
-     * If NULL is returned, the planner will plan from scratch.
-     */
-    virtual XYThetaStateChangeQuery* updateForPlanRequest() { return NULL; }
+    virtual bool updateForPlanRequest(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal);
 
     virtual void publishStats(int solution_cost, int solution_size, const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal);
     virtual void publish_expansions();
@@ -108,8 +103,10 @@ protected:
     bool found_prefix_;
 
     moveit_msgs::DisplayTrajectory current_best_trajectory_;
+    moveit_msgs::DisplayTrajectory current_best_prefix_;
     double current_best_cost_;
     mutable boost::mutex trajectory_mutex_; // locks current_best_trajectory_ and current_best_cost_
+    mutable boost::mutex prefix_mutex_; // locks current_best_prefix_
 
     ros::Publisher plan_pub_;
     ros::Publisher traj_pub_;

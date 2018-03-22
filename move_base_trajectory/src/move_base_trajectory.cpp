@@ -49,37 +49,38 @@ void MoveBaseTrajectory::executeCallback(const move_base_msgs::MoveBaseGoalConst
         // if(not plan or trigger_replan) current_trajectory = computeGlobalTrajectory
         if(!isValidTrajectory(current_trajectory) || trigger_replan) {
             clearTrajectory(current_trajectory);
-            
+            ROS_INFO("cleared trajectory");
+
             //TODO use ais utility function
             //try{
-                geometry_msgs::TransformStamped planningStartTf = _tf.lookupTransform(_globalPlanner.planningFrame(), _baseFrame, 
-                                                                                      ros::Time(0), ros::Duration(1.5));
-                //}
+            geometry_msgs::TransformStamped planningStartTf = _tf.lookupTransform(_globalPlanner.planningFrame(), _baseFrame, 
+                                                                                  ros::Time(0), ros::Duration(1.5));
+            //}
   
             geometry_msgs::PoseStamped planningStartPose;
             ais_ros_msg_conversions::TransformToPose(planningStartTf, planningStartPose);
-
-            //tf2::convert<geometry_msgs::TransformStamped, geometry_msgs::PoseStamped>(planningStartTf, planningStartPose);
-            enum GlobalTrajectoryComputationResult res = computeGlobalTrajectory(
-                planningStartPose, goal->target_pose, current_trajectory);
-            switch(res) {
-                case GTCR_SUCCESS:
-                    // nothing to do here, we got what we wanted...
-                    ROS_INFO_STREAM("Found a trajectory of length " << current_trajectory.multi_dof_joint_trajectory.points.size());
-                    break;
-                case GTCR_INCONSISTENT:
-                    ROS_ERROR("Got inconsistent behavior from the planner.");
-                case GTCR_NO_TRAJECTORY:
-                    ROS_ERROR("No plan could be found.");
-                    _actionServer->setAborted(move_base_msgs::MoveBaseResult(), "Planner could not find a plan at all");
-                    goto after_loop;
-                    break;
-                case GTCR_PREEMPTED:
-                    goto after_loop;
-                    break;
-            }
-            trigger_replan = false;
+            startTrajectoryComputation(planningStartPose, goal->target_pose);
         }
+        ROS_INFO("update");
+
+        enum GlobalTrajectoryComputationResult res = updateGlobalTrajectory(current_trajectory);
+        switch(res) {
+        case GTCR_SUCCESS:
+            // nothing to do here, we got what we wanted...
+            ROS_INFO_STREAM("Found a trajectory of length " << current_trajectory.multi_dof_joint_trajectory.points.size());
+            break;
+        case GTCR_INCONSISTENT:
+            ROS_ERROR("Got inconsistent behavior from the planner.");
+        case GTCR_NO_TRAJECTORY:
+            ROS_ERROR("No plan could be found.");
+            _actionServer->setAborted(move_base_msgs::MoveBaseResult(), "Planner could not find a plan at all");
+            goto after_loop;
+            break;
+        case GTCR_PREEMPTED:
+            goto after_loop;
+            break;
+        }
+        trigger_replan = false;
 
         if(!isSameTrajectory(current_trajectory, _localPlanner.currentTrajectory())) {
             ROS_INFO("Attempting to set trajectory in local planner");
@@ -108,12 +109,16 @@ after_loop:
     _globalPlanner.stopTrajectoryComputation();
 }
 
-MoveBaseTrajectory::GlobalTrajectoryComputationResult MoveBaseTrajectory::computeGlobalTrajectory(
-    const geometry_msgs::PoseStamped & start, const geometry_msgs::PoseStamped & goal, 
-    moveit_msgs::RobotTrajectory & traj)
+void MoveBaseTrajectory::startTrajectoryComputation(const geometry_msgs::PoseStamped & start, const geometry_msgs::PoseStamped & goal)
+{
+    _globalPlanner.computeTrajectory(start, goal);
+    ROS_INFO("started trajectory computation in MoveBaseTrajectory");
+}
+
+MoveBaseTrajectory::GlobalTrajectoryComputationResult MoveBaseTrajectory::updateGlobalTrajectory(moveit_msgs::RobotTrajectory & traj)
 {
     enum GlobalTrajectoryComputationResult result = GTCR_NO_TRAJECTORY;
-    _globalPlanner.computeTrajectory(start, goal);
+
     // setup planner with new goal
     while(_globalPlanner.isComputing()) {   // TODO true = not preempt, timeout, whatever
         if(_actionServer->isPreemptRequested()){
@@ -138,7 +143,7 @@ MoveBaseTrajectory::GlobalTrajectoryComputationResult MoveBaseTrajectory::update
     if(_globalPlanner.foundTrajectory()) {
         moveit_msgs::DisplayTrajectory dtraj;
         if(_globalPlanner.getBestTrajectory(dtraj)) {
-            ROS_INFO("got a trajectory.");
+            ROS_INFO("got a trajectory from global planner.");
             _trajectoryPub.publish(dtraj);
             traj = dtraj.trajectory[0];
             result = GTCR_SUCCESS;
@@ -146,7 +151,16 @@ MoveBaseTrajectory::GlobalTrajectoryComputationResult MoveBaseTrajectory::update
             ROS_INFO("got inconsistent behavior.");
             result = GTCR_INCONSISTENT;
         }
+    }else if(_globalPlanner.foundPrefix()){
+        moveit_msgs::DisplayTrajectory dtraj;
+        if(_globalPlanner.getBestPrefix(dtraj)) {
+            ROS_INFO("got prefix from global planner");
+            //_trajectoryPub.publish(dtraj);
+            traj = dtraj.trajectory[0];
+            result = GTCR_SUCCESS;
+        }       
     }
+
     return result;
 }
 

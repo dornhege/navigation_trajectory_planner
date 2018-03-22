@@ -33,17 +33,16 @@ class MoveBaseTrajectory
         };
 
     protected:
-        /// Compute a global trajectory.
+        /// Start computation of a global trajectory using the global planner thread
+        void startTrajectoryComputation(const geometry_msgs::PoseStamped & start, const geometry_msgs::PoseStamped & goal);
+
         /**
-         * \param [in] goal the goal pose to reach.
          * \param [out] traj the computed trajectory (if GTCR_SUCCESS is returned).
          * \returns a GlobalTrajectoryComputationResult. If GTCR_PREEMPTED,
          * the action server has already been preempted. Otherwise control
          * should continue depending on the result.
          */
-        GlobalTrajectoryComputationResult computeGlobalTrajectory(
-            const geometry_msgs::PoseStamped & start, const geometry_msgs::PoseStamped & goal, 
-            moveit_msgs::RobotTrajectory & traj);
+        GlobalTrajectoryComputationResult updateGlobalTrajectory(moveit_msgs::RobotTrajectory & traj);
 
 
         MoveBaseTrajectory::GlobalTrajectoryComputationResult updateTrajectoryFromPlanner(moveit_msgs::RobotTrajectory& traj);
