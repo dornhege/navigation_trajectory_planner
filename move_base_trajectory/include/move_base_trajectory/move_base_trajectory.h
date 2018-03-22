@@ -34,7 +34,7 @@ class MoveBaseTrajectory
 
     protected:
         /// Start computation of a global trajectory using the global planner thread
-        void startTrajectoryComputation(const geometry_msgs::PoseStamped & start, const geometry_msgs::PoseStamped & goal);
+        bool startTrajectoryComputation(const geometry_msgs::PoseStamped & start, const geometry_msgs::PoseStamped & goal);
 
         /**
          * \param [out] traj the computed trajectory (if GTCR_SUCCESS is returned).

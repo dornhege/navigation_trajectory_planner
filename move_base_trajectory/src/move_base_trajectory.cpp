@@ -59,7 +59,11 @@ void MoveBaseTrajectory::executeCallback(const move_base_msgs::MoveBaseGoalConst
   
             geometry_msgs::PoseStamped planningStartPose;
             ais_ros_msg_conversions::TransformToPose(planningStartTf, planningStartPose);
-            startTrajectoryComputation(planningStartPose, goal->target_pose);
+            if(!startTrajectoryComputation(planningStartPose, goal->target_pose)){
+                _actionServer->setAborted(move_base_msgs::MoveBaseResult(), "Trajectory computation could not be started. Maybe the start or goal state are in collision.");
+                ROS_ERROR("Starting the trajectory computation failed.");
+                break;
+            }
         }
         ROS_INFO("update");
 
@@ -109,10 +113,10 @@ after_loop:
     _globalPlanner.stopTrajectoryComputation();
 }
 
-void MoveBaseTrajectory::startTrajectoryComputation(const geometry_msgs::PoseStamped & start, const geometry_msgs::PoseStamped & goal)
+bool MoveBaseTrajectory::startTrajectoryComputation(const geometry_msgs::PoseStamped & start, const geometry_msgs::PoseStamped & goal)
 {
-    _globalPlanner.computeTrajectory(start, goal);
-    ROS_INFO("started trajectory computation in MoveBaseTrajectory");
+    ROS_INFO("starting trajectory computation in MoveBaseTrajectory");
+    return _globalPlanner.computeTrajectory(start, goal);
 }
 
 MoveBaseTrajectory::GlobalTrajectoryComputationResult MoveBaseTrajectory::updateGlobalTrajectory(moveit_msgs::RobotTrajectory & traj)
