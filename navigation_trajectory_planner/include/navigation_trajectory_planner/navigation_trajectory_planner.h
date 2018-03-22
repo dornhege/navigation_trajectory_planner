@@ -103,6 +103,9 @@ protected:
     double allocated_time_;
     double initial_epsilon_;
     int force_scratch_limit_;   ///< if the number of changed cells is >= this, planning from scratch will happen
+    double prefix_length_;
+    int max_prefix_entries_;
+    bool found_prefix_;
 
     moveit_msgs::DisplayTrajectory current_best_trajectory_;
     double current_best_cost_;
@@ -119,6 +122,7 @@ protected:
     ros::Publisher pub_expansion_first_map_;
     ros::Publisher pub_generation_first_map_;
     ros::Publisher pub_expansion_prefix_;
+    ros::Publisher pub_chosen_prefix_;
 
     ros::ServiceServer srv_sample_poses_;
 };

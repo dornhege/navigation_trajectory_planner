@@ -5,6 +5,7 @@
 #include "timing/timing.h"
 
 #include <sbpl/discrete_space_information/environment_navxythetalat.h>
+#include <sbpl/utils/grid_world_conversion.h>
 
 #include <geometry_msgs/PoseStamped.h>
 #include <moveit_msgs/DisplayTrajectory.h>
@@ -47,6 +48,7 @@ class EnvironmentNavXYThetaLatGeneric : public EnvironmentNAVXYTHETALAT
 
         /// Returns the tf frame that this env assumes all poses to be in.
         virtual std::string getPlanningFrame() const = 0;
+        const SBPLGridConverter* converter() const;
 
         /// Transform a pose in any frame by a suitable method to the planning frame.
         virtual bool transformPoseToPlanningFrame(geometry_msgs::PoseStamped & pose) = 0;
@@ -91,6 +93,8 @@ class EnvironmentNavXYThetaLatGeneric : public EnvironmentNAVXYTHETALAT
 
     protected:
         ros::NodeHandle nhPriv_;
+
+        SBPLGridConverter* converter_;
 
         freespace_mechanism_heuristic::HeuristicCostMapPtr freespace_heuristic_costmap;
         bool useFreespaceHeuristic_;

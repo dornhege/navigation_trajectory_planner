@@ -42,7 +42,8 @@ const std::vector<int> * XYThetaStateChangeQuery::getSuccessors() const
 NavigationTrajectoryPlanner::NavigationTrajectoryPlanner() :
     initialized_(false), 
     initial_epsilon_(0),
-    env_(NULL), force_scratch_limit_(0), planner_(NULL), allocated_time_(0)
+    env_(NULL), force_scratch_limit_(0), planner_(NULL), allocated_time_(0),
+    found_prefix_(false)
 {
 }
 
@@ -64,6 +65,8 @@ void NavigationTrajectoryPlanner::initialize(std::string name)
         ROS_FATAL("Failed to create search planner!");
         exit(1);
     }
+    private_nh_->param("prefix_length", prefix_length_, 1.);
+    private_nh_->param("max_prefix_entries", max_prefix_entries_, 30);
 
     ROS_INFO("navigation_trajectory_planner: Initialized successfully");
     plan_pub_ = private_nh_->advertise<nav_msgs::Path>("plan", 1, true);
@@ -78,6 +81,7 @@ void NavigationTrajectoryPlanner::initialize(std::string name)
     pub_expansion_first_map_ = private_nh_->advertise<nav_msgs::OccupancyGrid>("expansion_first_map", 3, true);
     pub_generation_first_map_ = private_nh_->advertise<nav_msgs::OccupancyGrid>("generation_first_map", 3, true);
     pub_expansion_prefix_ = private_nh_->advertise<nav_msgs::Path>("expansion_prefix", 3, false);
+    pub_chosen_prefix_ = private_nh_->advertise<nav_msgs::Path>("chosen_prefix", 3, true);
 
     srv_sample_poses_ = private_nh_->advertiseService("sample_valid_poses",
             &NavigationTrajectoryPlanner::sampleValidPoses, this);
@@ -297,6 +301,7 @@ bool NavigationTrajectoryPlanner::makeTrajectory(const geometry_msgs::PoseStampe
     ROS_DEBUG("allocated time: %.1f, initial eps: %.2f\n", allocated_time_, initial_epsilon_);
     planner_->set_initialsolution_eps(initial_epsilon_);
     planner_->set_search_mode(false);
+    found_prefix_ = false;
 
     ROS_DEBUG("Running planner");
     std::vector<int> solution_stateIDs;
@@ -568,6 +573,10 @@ void NavigationTrajectoryPlanner::handleNewExpandedStatePath(const std::vector<i
         ROS_ERROR("Environment is non existent!");
         return;
     }
+    if(path.size() < 2){
+        return;
+    }
+
     std::vector<sbpl_xy_theta_pt_t> sbpl_path;
     try {
         env_->ConvertStateIDPathintoXYThetaPath(&path, &sbpl_path);
@@ -589,7 +598,28 @@ void NavigationTrajectoryPlanner::handleNewExpandedStatePath(const std::vector<i
         visPath.poses.push_back(pose);
     }
     pub_expansion_prefix_.publish(visPath);
-}
 
+    int x_i = env_->GetEnvNavConfig()->StartX_c;
+    int y_i = env_->GetEnvNavConfig()->StartY_c;
+    double x_d, y_d;
+    env_->converter()->grid2dToWorld(x_i, y_i, x_d, y_d);
+
+    if(!found_prefix_){
+        if(max_prefix_entries_ > 0){
+            if(sbpl_path.size() > max_prefix_entries_ || hypot(x_d - sbpl_path.back().x, y_d - sbpl_path.back().y) > prefix_length_){
+                found_prefix_ = true;
+            }
+        }else if(max_prefix_entries_ == 0 && hypot(x_d - sbpl_path.back().x, y_d - sbpl_path.back().y) > prefix_length_){
+            found_prefix_ = true;
+        }
+        
+        if(found_prefix_){
+            ROS_INFO_STREAM("Found prefix of length " << sbpl_path.size()
+                            << ", startx = " << x_d << ", starty = " << y_d << ", endx = " << sbpl_path.back().x << ", endy = " << sbpl_path.back().y
+                            << " with dist " << hypot(x_d - sbpl_path.back().x, y_d - sbpl_path.back().y));
+            pub_chosen_prefix_.publish(visPath);
+        }
+    }
+}
 
 }

@@ -15,7 +15,9 @@
 #include <boost/foreach.hpp>
 #define forEach BOOST_FOREACH
 
-EnvironmentNavXYThetaLatGeneric::EnvironmentNavXYThetaLatGeneric(ros::NodeHandle & nhPriv) : nhPriv_(nhPriv)
+EnvironmentNavXYThetaLatGeneric::EnvironmentNavXYThetaLatGeneric(ros::NodeHandle & nhPriv) : 
+    nhPriv_(nhPriv),
+    converter_(NULL)
 {
     timeFreespace = new Timing("freespace_heuristic", true, Timing::SP_STATS, false);
     timeHeuristic = new Timing("heuristic", true, Timing::SP_STATS, false);
@@ -25,6 +27,9 @@ EnvironmentNavXYThetaLatGeneric::~EnvironmentNavXYThetaLatGeneric()
 {
     delete timeFreespace;
     delete timeHeuristic;
+      if(converter_ != NULL){
+        delete converter_;
+      }
 }
 
 bool EnvironmentNavXYThetaLatGeneric::InitializeEnv(int width, int height, const unsigned char* mapdata,
@@ -118,6 +123,11 @@ bool EnvironmentNavXYThetaLatGeneric::useFreespaceHeuristic(bool on)
         ROS_ERROR("useFreespaceHeuristic requested on, but no freespace_heuristic_costmap loaded.");
         useFreespaceHeuristic_ = false;
     }
+}
+
+const SBPLGridConverter* EnvironmentNavXYThetaLatGeneric::converter() const
+{
+    return converter_;
 }
 
 void EnvironmentNavXYThetaLatGeneric::updateForPlanRequest()
