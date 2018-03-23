@@ -65,13 +65,12 @@ void MoveBaseTrajectory::executeCallback(const move_base_msgs::MoveBaseGoalConst
                 break;
             }
         }
-        ROS_INFO("update");
 
         enum GlobalTrajectoryComputationResult res = updateGlobalTrajectory(current_trajectory);
         switch(res) {
         case GTCR_SUCCESS:
             // nothing to do here, we got what we wanted...
-            ROS_INFO_STREAM("Found a trajectory of length " << current_trajectory.multi_dof_joint_trajectory.points.size());
+            //ROS_INFO_STREAM("Found a trajectory of length " << current_trajectory.multi_dof_joint_trajectory.points.size());
             break;
         case GTCR_INCONSISTENT:
             ROS_ERROR("Got inconsistent behavior from the planner.");
@@ -147,7 +146,7 @@ MoveBaseTrajectory::GlobalTrajectoryComputationResult MoveBaseTrajectory::update
     if(_globalPlanner.foundTrajectory()) {
         moveit_msgs::DisplayTrajectory dtraj;
         if(_globalPlanner.getBestTrajectory(dtraj)) {
-            ROS_INFO("got a trajectory from global planner.");
+            //ROS_INFO("got a trajectory from global planner.");
             _trajectoryPub.publish(dtraj);
             traj = dtraj.trajectory[0];
             result = GTCR_SUCCESS;
@@ -158,8 +157,7 @@ MoveBaseTrajectory::GlobalTrajectoryComputationResult MoveBaseTrajectory::update
     }else if(_globalPlanner.foundPrefix()){
         moveit_msgs::DisplayTrajectory dtraj;
         if(_globalPlanner.getBestPrefix(dtraj)) {
-            ROS_INFO("got prefix from global planner");
-            //_trajectoryPub.publish(dtraj);
+            //ROS_INFO("got prefix from global planner");
             traj = dtraj.trajectory[0];
             result = GTCR_SUCCESS;
         }       
