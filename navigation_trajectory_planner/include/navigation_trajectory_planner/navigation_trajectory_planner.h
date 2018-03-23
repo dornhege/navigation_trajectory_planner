@@ -98,8 +98,9 @@ protected:
     double allocated_time_;
     double initial_epsilon_;
     int force_scratch_limit_;   ///< if the number of changed cells is >= this, planning from scratch will happen
-    double prefix_length_;
-    int max_prefix_entries_;
+    double prefix_dist_;
+    int min_prefix_entries_;
+    double used_prefix_portion_;
     bool found_prefix_;
 
     moveit_msgs::DisplayTrajectory current_best_trajectory_;

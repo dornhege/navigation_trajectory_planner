@@ -65,8 +65,9 @@ void NavigationTrajectoryPlanner::initialize(std::string name)
         ROS_FATAL("Failed to create search planner!");
         exit(1);
     }
-    private_nh_->param("prefix_length", prefix_length_, 1.);
-    private_nh_->param("max_prefix_entries", max_prefix_entries_, 30);
+    private_nh_->param("prefix_dist", prefix_dist_, 1.);
+    private_nh_->param("min_prefix_entries", min_prefix_entries_, 30);
+    private_nh_->param("used_prefix_portion", used_prefix_portion_, 1.);
 
     ROS_INFO("navigation_trajectory_planner: Initialized successfully");
     plan_pub_ = private_nh_->advertise<nav_msgs::Path>("plan", 1, true);
@@ -611,27 +612,36 @@ void NavigationTrajectoryPlanner::handleNewExpandedStatePath(const std::vector<i
     }
     pub_expansion_prefix_.publish(visPath);
 
-    int x_i = env_->GetEnvNavConfig()->StartX_c;
-    int y_i = env_->GetEnvNavConfig()->StartY_c;
-    double x_d, y_d;
-    env_->converter()->grid2dToWorld(x_i, y_i, x_d, y_d);
-
     if(!found_prefix_){
-        if(max_prefix_entries_ > 0){
-            if(sbpl_path.size() > max_prefix_entries_ || hypot(x_d - sbpl_path.back().x, y_d - sbpl_path.back().y) > prefix_length_){
+        int x_i = env_->GetEnvNavConfig()->StartX_c;
+        int y_i = env_->GetEnvNavConfig()->StartY_c;
+        double x_d, y_d;
+        env_->converter()->grid2dToWorld(x_i, y_i, x_d, y_d);
+
+        if(min_prefix_entries_ > 0){
+            if(sbpl_path.size() > min_prefix_entries_ || hypot(x_d - sbpl_path.back().x, y_d - sbpl_path.back().y) > prefix_dist_){
                 found_prefix_ = true;
             }
-        }else if(max_prefix_entries_ == 0 && hypot(x_d - sbpl_path.back().x, y_d - sbpl_path.back().y) > prefix_length_){
+        }else if(min_prefix_entries_ == 0 && hypot(x_d - sbpl_path.back().x, y_d - sbpl_path.back().y) > prefix_dist_){
             found_prefix_ = true;
         }
         
         if(found_prefix_){
+            std::vector<int> prefixPath;
+            int used_prefix_part = path.size();
+            if(used_prefix_portion_ <= 1){
+                used_prefix_part = used_prefix_portion_*path.size();
+            }
+            ROS_INFO_STREAM("using " << used_prefix_part << " entries of the determined prefix");
+            prefixPath.resize(used_prefix_part);
+            std::copy(path.begin(), path.begin()+used_prefix_part, prefixPath.begin());
+
             ROS_INFO_STREAM("Found prefix of length " << sbpl_path.size()
                             << ", startx = " << x_d << ", starty = " << y_d << ", endx = " << sbpl_path.back().x << ", endy = " << sbpl_path.back().y
                             << " with dist " << hypot(x_d - sbpl_path.back().x, y_d - sbpl_path.back().y));
             boost::mutex::scoped_lock lock(prefix_mutex_);
             current_best_prefix_ = env_->stateIDPathToDisplayTrajectory(path);
-            planner_->set_prefix(&path);
+            planner_->set_prefix(&prefixPath);
             pub_chosen_prefix_.publish(visPath);
         }
     }
