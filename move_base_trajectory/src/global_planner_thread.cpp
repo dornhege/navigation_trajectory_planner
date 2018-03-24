@@ -57,9 +57,7 @@ bool GlobalPlannerThread::computeTrajectory(const geometry_msgs::PoseStamped & s
         ROS_WARN("Could not update planner for new request.");
         return false;
     }
-    ROS_INFO("starting planner thread");
     _plannerThread = boost::thread(boost::bind(&BaseGlobalPlannerTrajectory::makeTrajectory, _globalPlanner, start, goal, trajectory));
-    ROS_INFO("started planner thread");
     return true;
 }
 
@@ -75,8 +73,9 @@ bool GlobalPlannerThread::foundPrefix() const
 
 void GlobalPlannerThread::stopTrajectoryComputation()
 {
-    // TODO define interruption points for the thread.
-    _plannerThread.interrupt();
+    pthread_cancel(_plannerThread.native_handle());
+    //_plannerThread.interrupt();
+    //_plannerThread.timed_join(boost::posix_time::seconds(0));
 }
 
 std::string GlobalPlannerThread::planningFrame() const

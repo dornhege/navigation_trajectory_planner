@@ -122,6 +122,12 @@ MoveBaseTrajectory::GlobalTrajectoryComputationResult MoveBaseTrajectory::update
 {
     enum GlobalTrajectoryComputationResult result = GTCR_NO_TRAJECTORY;
 
+    if(!_globalPlanner.isComputing() && !_globalPlanner.foundTrajectory()){
+        //_actionServer->setPreempted();
+        //_actionServer->setAborted(move_base_msgs::MoveBaseResult(), "Trajectory for local planner could not be set.");
+        return result;
+    }
+
     // setup planner with new goal
     while(_globalPlanner.isComputing()) {   // TODO true = not preempt, timeout, whatever
         if(_actionServer->isPreemptRequested()){
