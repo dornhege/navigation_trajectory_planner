@@ -642,6 +642,8 @@ void NavigationTrajectoryPlanner::handleNewExpandedStatePath(const std::vector<i
             boost::mutex::scoped_lock lock(prefix_mutex_);
             current_best_prefix_ = env_->stateIDPathToDisplayTrajectory(path);
             planner_->set_prefix(&prefixPath);
+
+            visPath.poses.resize(current_best_prefix_.trajectory[0].multi_dof_joint_trajectory.points.size());
             pub_chosen_prefix_.publish(visPath);
         }
     }
