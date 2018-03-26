@@ -99,7 +99,7 @@ void MoveBaseTrajectory::executeCallback(const move_base_msgs::MoveBaseGoalConst
             ROS_WARN("Could not find a valid trajectory. Triggering replan.");
             trigger_replan = true;
         }else{
-            ROS_INFO_THROTTLE(1., "Executing hopefully smooth velicity command :)");
+            ROS_INFO_THROTTLE(5., "Executing velicity commands");
         }
 
         if(_localPlanner.isGoalReached()){
