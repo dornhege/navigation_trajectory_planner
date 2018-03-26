@@ -4,6 +4,7 @@
 #include <ais_rosparam_tools/load_ros_parameters.h>
 #include <ais_ros_msg_conversions/tf_msg_conversions.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf/tf.h>
 
 namespace move_base_trajectory
 {
