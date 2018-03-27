@@ -75,6 +75,7 @@ class MoveBaseTrajectory
     protected:
         std::string _baseFrame;
         ros::Publisher _trajectoryPub;
+        ros::Publisher _currentGlobalGoalPub;
 
         tf2_ros::Buffer & _tf;
         MoveBaseActionServer* _actionServer;

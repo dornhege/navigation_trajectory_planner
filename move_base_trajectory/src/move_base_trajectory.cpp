@@ -18,6 +18,7 @@ MoveBaseTrajectory::MoveBaseTrajectory(tf2_ros::Buffer & tf) : _tf(tf), _actionS
 
     ros::NodeHandle privateNh("~");
     _trajectoryPub = privateNh.advertise<moveit_msgs::DisplayTrajectory>("trajectory", 3);
+    _currentGlobalGoalPub = privateNh.advertise<move_base_msgs::MoveBaseGoal>("global_goal", 3);
     ais_rosparam_tools::checkAndLoadParameter(privateNh, "base_frame", _baseFrame, true);
     _actionServer->start();
 }
@@ -36,6 +37,7 @@ void MoveBaseTrajectory::executeCallback(const move_base_msgs::MoveBaseGoalConst
                     << " " << angles::to_degrees(tf::getYaw(goal->target_pose.pose.orientation)) 
                     << "deg in frame " << goal->target_pose.header.frame_id
                     << " (" << goal->target_pose.header.stamp.toSec() << ")");
+    _currentGlobalGoalPub.publish(*goal);
 
     ros::Rate loopRate(20);
 
