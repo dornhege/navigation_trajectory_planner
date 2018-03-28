@@ -3,17 +3,20 @@
 
 #include <ros/ros.h>
 #include <actionlib/server/simple_action_server.h>
+#include <bonirob_navigation_msgs/MoveBaseGeoPoseAction.h>
+#include <geographic_msgs/GeoPoseStamped.h>
+#include <gps_reference/gps_reference.h>
+#include <moveit_msgs/DisplayTrajectory.h>
 #include <move_base_msgs/MoveBaseAction.h>
 #include <move_base_trajectory/base_local_planner.h>
 #include <move_base_trajectory/base_global_planner.h>
 #include "move_base_trajectory/local_planner.h"
 #include "move_base_trajectory/global_planner_thread.h"
-#include <moveit_msgs/DisplayTrajectory.h>
 
 namespace move_base_trajectory
 {
 
-typedef actionlib::SimpleActionServer<move_base_msgs::MoveBaseAction> MoveBaseActionServer;
+typedef actionlib::SimpleActionServer<bonirob_navigation_msgs::MoveBaseGeoPoseAction> MoveBaseActionServer;
 
 class MoveBaseTrajectory
 {
@@ -22,7 +25,11 @@ class MoveBaseTrajectory
         ~MoveBaseTrajectory();
 
         /// Handles MoveBase action requests
-        void executeCallback(const move_base_msgs::MoveBaseGoalConstPtr & goal);
+        void executeCallback(const geometry_msgs::PoseStamped& target_pose);
+        void executeCallbackGeoPose(const bonirob_navigation_msgs::MoveBaseGeoPoseGoalConstPtr& move_base_goal);
+
+        geometry_msgs::PoseStamped geoPoseGoalToPoseStamped(const bonirob_navigation_msgs::MoveBaseGeoPoseGoalConstPtr& goal);
+        geographic_msgs::GeoPoseStamped getGlobalPose(const geometry_msgs::PoseStamped& goal);
 
     protected:
         enum GlobalTrajectoryComputationResult {
@@ -75,13 +82,14 @@ class MoveBaseTrajectory
     protected:
         std::string _baseFrame;
         ros::Publisher _trajectoryPub;
-        ros::Publisher _currentGlobalGoalPub;
+        ros::Publisher current_goal_pub_;
 
         tf2_ros::Buffer & _tf;
         MoveBaseActionServer* _actionServer;
 
         GlobalPlannerThread _globalPlanner;
         LocalPlanner _localPlanner;
+        gps_reference::GpsReference* gps_reference_;
 };
 
 }

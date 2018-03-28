@@ -13,31 +13,46 @@ MoveBaseTrajectory::MoveBaseTrajectory(tf2_ros::Buffer & tf) : _tf(tf), _actionS
 {
     ros::NodeHandle nh;
     _actionServer = new MoveBaseActionServer(nh, "move_base",
-            boost::bind(&MoveBaseTrajectory::executeCallback, this, _1), false);
+                                             boost::bind(&MoveBaseTrajectory::executeCallbackGeoPose, this, _1), false);
 
+
+    gps_reference_ = new gps_reference::GpsReference();
+    if(!gps_reference_->gpsReferenceInitialized()){
+        ROS_FATAL("Could not initialize GPS reference. Did you upload the GPS reference parameters?");
+        exit(1);
+    }
 
     ros::NodeHandle privateNh("~");
     _trajectoryPub = privateNh.advertise<moveit_msgs::DisplayTrajectory>("trajectory", 3);
-    _currentGlobalGoalPub = privateNh.advertise<move_base_msgs::MoveBaseGoal>("global_goal", 3);
     ais_rosparam_tools::checkAndLoadParameter(privateNh, "base_frame", _baseFrame, true);
+
+    current_goal_pub_ = privateNh.advertise<geometry_msgs::PoseStamped>("global_goal", 0 );
     _actionServer->start();
 }
 
 MoveBaseTrajectory::~MoveBaseTrajectory()
 {
+    delete gps_reference_;
 }
 
-void MoveBaseTrajectory::executeCallback(const move_base_msgs::MoveBaseGoalConstPtr & goal)
+void MoveBaseTrajectory::executeCallbackGeoPose(const bonirob_navigation_msgs::MoveBaseGeoPoseGoalConstPtr& goal)
+{
+    geometry_msgs::PoseStamped target_pose = geoPoseGoalToPoseStamped(goal);
+    // TODO publish goal marker
+    current_goal_pub_.publish(target_pose);
+    executeCallback(target_pose);
+}
+
+void MoveBaseTrajectory::executeCallback(const geometry_msgs::PoseStamped& target_pose)
 {
     // check move base action is inactive
     // disable planner + local planenr
-    ROS_INFO_STREAM("New move base call with goal " << goal->target_pose.pose.position.x 
-                    << " " << goal->target_pose.pose.position.y
-                    << " " << goal->target_pose.pose.position.z
-                    << " " << angles::to_degrees(tf::getYaw(goal->target_pose.pose.orientation)) 
-                    << "deg in frame " << goal->target_pose.header.frame_id
-                    << " (" << goal->target_pose.header.stamp.toSec() << ")");
-    _currentGlobalGoalPub.publish(*goal);
+    ROS_INFO_STREAM("New move base call with goal " << target_pose.pose.position.x 
+                    << " " << target_pose.pose.position.y
+                    << " " << target_pose.pose.position.z
+                    << " " << angles::to_degrees(tf::getYaw(target_pose.pose.orientation)) 
+                    << "deg in frame " << target_pose.header.frame_id
+                    << " (" << target_pose.header.stamp.toSec() << ")");
 
     ros::Rate loopRate(20);
 
@@ -62,8 +77,8 @@ void MoveBaseTrajectory::executeCallback(const move_base_msgs::MoveBaseGoalConst
   
             geometry_msgs::PoseStamped planningStartPose;
             ais_ros_msg_conversions::TransformToPose(planningStartTf, planningStartPose);
-            if(!startTrajectoryComputation(planningStartPose, goal->target_pose)){
-                _actionServer->setAborted(move_base_msgs::MoveBaseResult(), "Trajectory computation could not be started. Maybe the start or goal state are in collision.");
+            if(!startTrajectoryComputation(planningStartPose, target_pose)){
+                _actionServer->setAborted(bonirob_navigation_msgs::MoveBaseGeoPoseResult(), "Trajectory computation could not be started. Maybe the start or goal state are in collision.");
                 ROS_ERROR("Starting the trajectory computation failed.");
                 break;
             }
@@ -79,7 +94,7 @@ void MoveBaseTrajectory::executeCallback(const move_base_msgs::MoveBaseGoalConst
             ROS_ERROR("Got inconsistent behavior from the planner.");
         case GTCR_NO_TRAJECTORY:
             ROS_ERROR("No plan could be found.");
-            _actionServer->setAborted(move_base_msgs::MoveBaseResult(), "Planner could not find a plan at all");
+            _actionServer->setAborted(bonirob_navigation_msgs::MoveBaseGeoPoseResult(), "Planner could not find a plan at all");
             goto after_loop;
             break;
         case GTCR_PREEMPTED:
@@ -92,7 +107,7 @@ void MoveBaseTrajectory::executeCallback(const move_base_msgs::MoveBaseGoalConst
             ROS_INFO("Attempting to set trajectory in local planner");
             if(!updateLocalPlannerTrajectory(current_trajectory)){
                 ROS_ERROR("Trajectory for local planner could not be set.");
-                _actionServer->setAborted(move_base_msgs::MoveBaseResult(), "Trajectory for local planner could not be set.");
+                _actionServer->setAborted(bonirob_navigation_msgs::MoveBaseGeoPoseResult(), "Trajectory for local planner could not be set.");
                 break;
             }
         }
@@ -105,7 +120,7 @@ void MoveBaseTrajectory::executeCallback(const move_base_msgs::MoveBaseGoalConst
         }
 
         if(_localPlanner.isGoalReached()){
-            _actionServer->setSucceeded(move_base_msgs::MoveBaseResult(), "Goal reached!");
+            _actionServer->setSucceeded(bonirob_navigation_msgs::MoveBaseGeoPoseResult(), "Goal reached!");
             break;
         }
         loopRate.sleep();
@@ -127,7 +142,7 @@ MoveBaseTrajectory::GlobalTrajectoryComputationResult MoveBaseTrajectory::update
 
     if(!_globalPlanner.isComputing() && !_globalPlanner.foundTrajectory()){
         //_actionServer->setPreempted();
-        //_actionServer->setAborted(move_base_msgs::MoveBaseResult(), "Trajectory for local planner could not be set.");
+        //_actionServer->setAborted(bonirob_navigation_msgs::MoveBaseGeoPoseResult(), "Trajectory for local planner could not be set.");
         return result;
     }
 
@@ -209,5 +224,14 @@ void MoveBaseTrajectory::clearTrajectory(moveit_msgs::RobotTrajectory & traj)
     traj = moveit_msgs::RobotTrajectory();
 }
 
+geometry_msgs::PoseStamped MoveBaseTrajectory::geoPoseGoalToPoseStamped(const bonirob_navigation_msgs::MoveBaseGeoPoseGoalConstPtr& goal)
+{
+    return gps_reference_->getGpsReferencedPose(goal->target_pose);
+}
+
+geographic_msgs::GeoPoseStamped MoveBaseTrajectory::getGlobalPose(const geometry_msgs::PoseStamped& goal)
+{
+    return gps_reference_->getGlobalPose(goal);
+}
 }
 
