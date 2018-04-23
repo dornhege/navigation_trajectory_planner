@@ -643,7 +643,7 @@ void NavigationTrajectoryPlanner::handleNewExpandedStatePath(const std::vector<i
             current_best_prefix_ = env_->stateIDPathToDisplayTrajectory(path);
             planner_->set_prefix(&prefixPath);
 
-            visPath.poses.resize(current_best_prefix_.trajectory[0].multi_dof_joint_trajectory.points.size());
+            visPath.poses.resize(current_best_prefix_.trajectory[0].multi_dof_joint_trajectory.points.size()-1);
             pub_chosen_prefix_.publish(visPath);
         }
     }
