@@ -1,6 +1,7 @@
 #include "navigation_trajectory_planner/navigation_trajectory_planner.h"
 #include "color_tools_ros/color_tools_ros.h"
 #include "navigation_trajectory_msgs/PlannerStats.h"
+#include <ais_rosparam_tools/load_ros_parameters.h>
 
 #include <sbpl/planners/planner.h>
 #include <nav_msgs/Path.h>
@@ -55,7 +56,12 @@ void NavigationTrajectoryPlanner::initialize(std::string name)
     ROS_INFO("Planner Name is %s", name.c_str());
     private_nh_ = new ros::NodeHandle("~/" + name);
 
-    readDynamicParameters();
+    ais_rosparam_tools::checkAndSubscribeParameterDefault(private_nh_, "allocated_time", &allocated_time_, 10.0);
+    ais_rosparam_tools::checkAndSubscribeParameterDefault(private_nh_, "initial_epsilon", &initial_epsilon_, 3.0);
+    ais_rosparam_tools::checkAndSubscribeParameterDefault(private_nh_, "force_scratch_limit", &force_scratch_limit_, 500);
+    ais_rosparam_tools::checkAndSubscribeParameterDefault(private_nh_,"prefix_dist", &prefix_dist_, 1.);
+    ais_rosparam_tools::checkAndSubscribeParameterDefault(private_nh_,"min_prefix_entries", &min_prefix_entries_, 30);
+    ais_rosparam_tools::checkAndSubscribeParameterDefault(private_nh_,"used_prefix_portion", &used_prefix_portion_, 1.);
 
     if(!createAndInitializeEnvironment()) {
         ROS_FATAL("Environment creation or initialization failed!");
@@ -65,9 +71,6 @@ void NavigationTrajectoryPlanner::initialize(std::string name)
         ROS_FATAL("Failed to create search planner!");
         exit(1);
     }
-    private_nh_->param("prefix_dist", prefix_dist_, 1.);
-    private_nh_->param("min_prefix_entries", min_prefix_entries_, 30);
-    private_nh_->param("used_prefix_portion", used_prefix_portion_, 1.);
 
     ROS_INFO("navigation_trajectory_planner: Initialized successfully");
     plan_pub_ = private_nh_->advertise<nav_msgs::Path>("plan", 1, true);
@@ -149,9 +152,7 @@ std::string NavigationTrajectoryPlanner::planningFrame() const
 
 void NavigationTrajectoryPlanner::readDynamicParameters()
 {
-    private_nh_->param("allocated_time", allocated_time_, 10.0);
-    private_nh_->param("initial_epsilon", initial_epsilon_, 3.0);
-    private_nh_->param("force_scratch_limit", force_scratch_limit_, 500);
+    ais_rosparam_tools::requeryParams();
 }
 
 void NavigationTrajectoryPlanner::publishStats(int solution_cost, int solution_size, const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal)

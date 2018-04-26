@@ -5,6 +5,7 @@ project(navigation_trajectory_planner)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  ais_rosparam_tools
   angles
   color_tools_ros
   freespace_mechanism_heuristic
@@ -91,7 +92,9 @@ find_package(Boost REQUIRED COMPONENTS system)
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES navigation_trajectory_planner
-  CATKIN_DEPENDS angles
+  CATKIN_DEPENDS 
+    ais_rosparam_tools
+    angles
     color_tools_ros
     freespace_mechanism_heuristic
     geometry_msgs
