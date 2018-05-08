@@ -327,12 +327,23 @@ bool NavigationTrajectoryPlanner::makeTrajectory(const geometry_msgs::PoseStampe
     dtraj = env_->stateIDPathToDisplayTrajectory(solution_stateIDs);
     if(!dtraj.trajectory.empty()) {
         ROS_ASSERT(dtraj.trajectory.size() == 1);
-        // traj = dtraj.trajectory[0];
+
+        trajectory_msgs::JointTrajectoryPoint point;
+        trajectory_msgs::MultiDOFJointTrajectoryPoint multiDOFPoint;
+        geometry_msgs::Transform robotPose;
+        dtraj.trajectory[0].joint_trajectory.points.push_back(dtraj.trajectory[0].joint_trajectory.points.back());
+
+        robotPose.translation.x = goal.pose.position.x;
+        robotPose.translation.y = goal.pose.position.y;
+        robotPose.rotation = goal.pose.orientation;
+
+        multiDOFPoint.transforms.clear();
+        multiDOFPoint.transforms.push_back(robotPose);
+        dtraj.trajectory[0].multi_dof_joint_trajectory.points.push_back(multiDOFPoint);
+
         nav_msgs::Path gui_path = trajectoryToGuiPath(dtraj.trajectory[0]);
         plan_pub_.publish(gui_path);
     }
-    //traj_pub_.publish(dtraj);
-    // TODO publish somewhere else
     publish_expansions();
     publish_expansion_map();
     return true;
