@@ -120,10 +120,10 @@ void MoveBaseTrajectory::executeCallback(const geometry_msgs::PoseStamped& targe
         }
 
         bonirob_navigation_msgs::MoveBaseGeoPoseFeedback feedback;
-        feedback.base_position;
-        feedback.dist_to_goal;
-        feedback.angle_to_goal;
-        feedback.angle_at_goal;
+        //feedback.base_position;
+        feedback.dist_to_goal = _localPlanner.distanceToGoal();
+        feedback.angle_to_goal = _localPlanner.angleToGoal();
+        feedback.angle_at_goal = _localPlanner.angleAtGoal();
         _actionServer->publishFeedback(feedback);
 
         if(_localPlanner.isGoalReached()){

@@ -28,6 +28,12 @@ class LocalPlanner
 
         std::string planningFrame() const;
 
+        virtual double distanceToGoal() const;
+        virtual double angleToGoal() const;
+        virtual double angleAtGoal() const;
+        //virtual geographic_msgs::GeoPoseStamped robotPosition() const;
+        virtual void printState() const;
+
     protected:
         bool loadLocalPlanner(const std::string & localPlannerName, tf2_ros::Buffer & tf);
 

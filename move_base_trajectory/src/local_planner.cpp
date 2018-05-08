@@ -66,5 +66,24 @@ bool LocalPlanner::loadLocalPlanner(const std::string & localPlannerName, tf2_ro
     return true;
 }
 
+double LocalPlanner::distanceToGoal() const
+{
+    return _localPlanner->distanceToGoal();
 }
 
+double LocalPlanner::angleToGoal() const
+{
+    return _localPlanner->angleToGoal();
+}
+
+double LocalPlanner::angleAtGoal() const
+{
+    return _localPlanner->angleAtGoal();
+}
+
+void LocalPlanner::printState() const
+{
+    _localPlanner->printState();
+}
+
+}
