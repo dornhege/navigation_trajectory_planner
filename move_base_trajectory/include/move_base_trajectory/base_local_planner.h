@@ -2,6 +2,7 @@
 #define BASE_LOCAL_PLANNER_TRAJECTORY_H
 
 #include <string>
+#include <geographic_msgs/GeoPoseStamped.h>
 #include <geometry_msgs/Twist.h>
 #include <tf2_ros/buffer.h>
 #include <moveit_msgs/RobotTrajectory.h>
@@ -25,6 +26,12 @@ class BaseLocalPlannerTrajectory
       virtual const moveit_msgs::RobotTrajectory& currentTrajectory() const = 0;
 
       virtual std::string planningFrame() const = 0;
+
+      virtual double distanceToGoal() const = 0;
+      virtual double angleToGoal() const = 0;
+      virtual double angleAtGoal() const = 0;
+      //virtual geographic_msgs::GeoPoseStamped robotPosition() const = 0;
+      virtual void printState() const = 0;
 };
 
 }
