@@ -119,6 +119,13 @@ void MoveBaseTrajectory::executeCallback(const geometry_msgs::PoseStamped& targe
             ROS_INFO_THROTTLE(5., "Executing velicity commands");
         }
 
+        bonirob_navigation_msgs::MoveBaseGeoPoseFeedback feedback;
+        feedback.base_position;
+        feedback.dist_to_goal;
+        feedback.angle_to_goal;
+        feedback.angle_at_goal;
+        _actionServer->publishFeedback(feedback);
+
         if(_localPlanner.isGoalReached()){
             _actionServer->setSucceeded(bonirob_navigation_msgs::MoveBaseGeoPoseResult(), "Goal reached!");
             break;
