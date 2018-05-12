@@ -233,7 +233,9 @@ void MoveBaseTrajectory::clearTrajectory(moveit_msgs::RobotTrajectory & traj)
 
 geometry_msgs::PoseStamped MoveBaseTrajectory::geoPoseGoalToPoseStamped(const bonirob_navigation_msgs::MoveBaseGeoPoseGoalConstPtr& goal)
 {
-    return gps_reference_->getGpsReferencedPose(goal->target_pose);
+    geometry_msgs::PoseStamped pose = gps_reference_->getGpsReferencedPose(goal->target_pose);
+    pose.pose.position.z = 0; // HACK!
+    return pose;
 }
 
 geographic_msgs::GeoPoseStamped MoveBaseTrajectory::getGlobalPose(const geometry_msgs::PoseStamped& goal)
