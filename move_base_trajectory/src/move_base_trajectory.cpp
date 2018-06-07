@@ -116,7 +116,7 @@ void MoveBaseTrajectory::executeCallback(const geometry_msgs::PoseStamped& targe
             ROS_WARN("Could not find a valid trajectory. Triggering replan.");
             trigger_replan = true;
         }else{
-            ROS_INFO_THROTTLE(5., "Executing velicity commands");
+            ROS_INFO_THROTTLE(5., "Executing velocity commands");
         }
 
         bonirob_navigation_msgs::MoveBaseGeoPoseFeedback feedback;

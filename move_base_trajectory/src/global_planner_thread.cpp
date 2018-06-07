@@ -40,11 +40,6 @@ bool GlobalPlannerThread::getBestPrefix(moveit_msgs::DisplayTrajectory & traj) c
 
 bool GlobalPlannerThread::isComputing() const
 {
-    // HACK
-    //ROS_WARN("HACK");
-    //_plannerThread.join();
-    //ROS_WARN("HACK, joined planner thread");
-    //return false;
     return !_plannerThread.timed_join(boost::posix_time::seconds(0));
 }
 
