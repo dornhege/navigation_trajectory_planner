@@ -63,7 +63,7 @@ public:
     virtual bool getCurrentBestTrajectory(moveit_msgs::DisplayTrajectory & dtraj) const;
     virtual bool getCurrentBestPrefix(moveit_msgs::DisplayTrajectory & dtraj) const;
 protected:
-    virtual bool sampleValidPoses(navigation_trajectory_msgs::SampleValidPoses::Request & req, navigation_trajectory_msgs::SampleValidPoses::Response & resp);
+    //virtual bool sampleValidPoses(navigation_trajectory_msgs::SampleValidPoses::Request & req, navigation_trajectory_msgs::SampleValidPoses::Response & resp);
 
     /// Make sure that a ready to use environment exists.
     virtual bool createAndInitializeEnvironment();
@@ -122,7 +122,7 @@ protected:
     ros::Publisher pub_expansion_prefix_;
     ros::Publisher pub_chosen_prefix_;
 
-    ros::ServiceServer srv_sample_poses_;
+//    ros::ServiceServer srv_sample_poses_;
 };
 
 }

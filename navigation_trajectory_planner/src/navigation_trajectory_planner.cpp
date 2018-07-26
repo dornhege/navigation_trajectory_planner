@@ -87,8 +87,8 @@ void NavigationTrajectoryPlanner::initialize(std::string name)
     pub_expansion_prefix_ = private_nh_->advertise<nav_msgs::Path>("expansion_prefix", 3, false);
     pub_chosen_prefix_ = private_nh_->advertise<nav_msgs::Path>("chosen_prefix", 3, true);
 
-    srv_sample_poses_ = private_nh_->advertiseService("sample_valid_poses",
-            &NavigationTrajectoryPlanner::sampleValidPoses, this);
+//    srv_sample_poses_ = private_nh_->advertiseService("sample_valid_poses",
+//            &NavigationTrajectoryPlanner::sampleValidPoses, this);
 
     srand48(time(NULL));
     initialized_ = true;
@@ -173,7 +173,7 @@ void NavigationTrajectoryPlanner::publishStats(int solution_cost, int solution_s
     stats_publisher_.publish(stats);
 }
 
-bool NavigationTrajectoryPlanner::sampleValidPoses(navigation_trajectory_msgs::SampleValidPoses::Request & req,
+/*bool NavigationTrajectoryPlanner::sampleValidPoses(navigation_trajectory_msgs::SampleValidPoses::Request & req,
         navigation_trajectory_msgs::SampleValidPoses::Response & resp)
 {
     geometry_msgs::Point min, max;
@@ -208,7 +208,7 @@ bool NavigationTrajectoryPlanner::sampleValidPoses(navigation_trajectory_msgs::S
     }
     return resp.poses.poses.size() >= req.n;
 }
-
+*/
 
 bool NavigationTrajectoryPlanner::updateForPlanRequest(const geometry_msgs::PoseStamped& startPose,
         const geometry_msgs::PoseStamped& goalPose)
@@ -230,7 +230,6 @@ bool NavigationTrajectoryPlanner::updateForPlanRequest(const geometry_msgs::Pose
             return false;
         }
     }
-    env_->updateForPlanRequest();
 
     ROS_INFO("Planning frame is %s", planningFrame().c_str());
 
@@ -250,6 +249,8 @@ bool NavigationTrajectoryPlanner::updateForPlanRequest(const geometry_msgs::Pose
     ROS_INFO("sbpl_xytheta_planner: setting start (%.2f, %.2f, %.2f deg), goal (%.2f, %.2f, %.2f deg)",
             start.pose.position.x, start.pose.position.y, angles::to_degrees(theta_start),
             goal.pose.position.x, goal.pose.position.y, angles::to_degrees(theta_goal));
+
+    env_->updateForPlanRequest(start, goal);
 
     int startId = 0;
     try {

@@ -62,7 +62,7 @@ class EnvironmentNavXYThetaLatGeneric : public EnvironmentNAVXYTHETALAT
 
         /// Update the internal representation to be current for a plan request.
         /// Called, whenever makePlan is called.
-        virtual void updateForPlanRequest();
+        virtual void updateForPlanRequest(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal);
 
         // heuristic handling
         virtual int GetFromToHeuristic(int FromStateID, int ToStateID);

@@ -130,7 +130,7 @@ const SBPLGridConverter* EnvironmentNavXYThetaLatGeneric::converter() const
     return converter_;
 }
 
-void EnvironmentNavXYThetaLatGeneric::updateForPlanRequest()
+void EnvironmentNavXYThetaLatGeneric::updateForPlanRequest(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal)
 {
     nhPriv_.getParam("use_freespace_heuristic", useFreespaceHeuristic_);
     useFreespaceHeuristic(useFreespaceHeuristic_);
