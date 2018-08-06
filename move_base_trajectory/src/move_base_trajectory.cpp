@@ -9,7 +9,7 @@
 namespace move_base_trajectory
 {
 
-MoveBaseTrajectory::MoveBaseTrajectory(tf2_ros::Buffer & tf) : _tf(tf), _actionServer(NULL), _localPlanner(tf)
+MoveBaseTrajectory::MoveBaseTrajectory(tf2_ros::Buffer & tf) : _tf(tf), _actionServer(NULL), _localPlanner(tf), _diagnostics("move_base_trajectory")
 {
     ros::NodeHandle nh;
     _actionServer = new MoveBaseActionServer(nh, "move_base",
@@ -53,6 +53,7 @@ void MoveBaseTrajectory::executeCallback(const geometry_msgs::PoseStamped& targe
                     << " " << angles::to_degrees(tf::getYaw(target_pose.pose.orientation)) 
                     << "deg in frame " << target_pose.header.frame_id
                     << " (" << target_pose.header.stamp.toSec() << ")");
+    _diagnostics.sendMessage("New goal");
 
     ros::Rate loopRate(20);
 
@@ -62,6 +63,7 @@ void MoveBaseTrajectory::executeCallback(const geometry_msgs::PoseStamped& targe
         if(_actionServer->isPreemptRequested()){
             _globalPlanner.stopTrajectoryComputation();
             _actionServer->setPreempted();
+            _diagnostics.sendMessage("Stopping loop by preempt.", 1);
             break;
         }
         // if(not plan or trigger_replan) current_trajectory = computeGlobalTrajectory
@@ -79,6 +81,7 @@ void MoveBaseTrajectory::executeCallback(const geometry_msgs::PoseStamped& targe
             ais_ros_msg_conversions::TransformToPose(planningStartTf, planningStartPose);
             if(!startTrajectoryComputation(planningStartPose, target_pose)){
                 _actionServer->setAborted(bonirob_navigation_msgs::MoveBaseGeoPoseResult(), "Trajectory computation could not be started. Maybe the start or goal state are in collision.");
+                _diagnostics.sendMessage("Cannot start planning", 2);
                 ROS_ERROR("Starting the trajectory computation failed.");
                 break;
             }
@@ -95,6 +98,7 @@ void MoveBaseTrajectory::executeCallback(const geometry_msgs::PoseStamped& targe
         case GTCR_NO_TRAJECTORY:
             ROS_ERROR("No plan could be found.");
             _actionServer->setAborted(bonirob_navigation_msgs::MoveBaseGeoPoseResult(), "Planner could not find a plan at all");
+            _diagnostics.sendMessage("No Plan Found!", 2);
             goto after_loop;
             break;
         case GTCR_PREEMPTED:
@@ -105,15 +109,18 @@ void MoveBaseTrajectory::executeCallback(const geometry_msgs::PoseStamped& targe
 
         if(!isSameTrajectory(current_trajectory, _localPlanner.currentTrajectory())) {
             ROS_INFO("Attempting to set trajectory in local planner");
+            _diagnostics.sendMessage("New Plan from planner found");
             if(!updateLocalPlannerTrajectory(current_trajectory)){
                 ROS_ERROR("Trajectory for local planner could not be set.");
                 _actionServer->setAborted(bonirob_navigation_msgs::MoveBaseGeoPoseResult(), "Trajectory for local planner could not be set.");
+                _diagnostics.sendMessage("Cannot update trajectory in controller", 2);
                 break;
             }
         }
 
         if(!executeTrajectory()) {
             ROS_WARN("Could not find a valid trajectory. Triggering replan.");
+            _diagnostics.sendMessage("Triggering Replanning", 1);
             trigger_replan = true;
         }else{
             ROS_INFO_THROTTLE(5., "Executing velocity commands");
@@ -128,6 +135,7 @@ void MoveBaseTrajectory::executeCallback(const geometry_msgs::PoseStamped& targe
 
         if(_localPlanner.isGoalReached()){
             _actionServer->setSucceeded(bonirob_navigation_msgs::MoveBaseGeoPoseResult(), "Goal reached!");
+            _diagnostics.sendMessage("Navigation Goal reached!");
             break;
         }
         loopRate.sleep();
@@ -157,6 +165,7 @@ MoveBaseTrajectory::GlobalTrajectoryComputationResult MoveBaseTrajectory::update
     while(_globalPlanner.isComputing()) {   // TODO true = not preempt, timeout, whatever
         if(_actionServer->isPreemptRequested()){
             ROS_INFO("The planner was asked to stop.");
+            _diagnostics.sendMessage("Stopping by preempt.", 1);
             _globalPlanner.stopTrajectoryComputation();
             _actionServer->setPreempted();
             return GTCR_PREEMPTED;

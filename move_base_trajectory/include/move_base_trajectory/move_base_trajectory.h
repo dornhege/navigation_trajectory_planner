@@ -12,6 +12,7 @@
 #include <move_base_trajectory/base_global_planner.h>
 #include "move_base_trajectory/local_planner.h"
 #include "move_base_trajectory/global_planner_thread.h"
+#include "diagnostics_simple/diagnostics_simple.h"
 
 namespace move_base_trajectory
 {
@@ -83,6 +84,7 @@ class MoveBaseTrajectory
         std::string _baseFrame;
         ros::Publisher _trajectoryPub;
         ros::Publisher current_goal_pub_;
+        diagnostics_simple::DiagnosticsSimple _diagnostics;
 
         tf2_ros::Buffer & _tf;
         MoveBaseActionServer* _actionServer;
