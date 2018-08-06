@@ -46,6 +46,7 @@ class GlobalPlannerThread
         void stopTrajectoryComputation();
 
         std::string planningFrame() const;
+        const boost::shared_ptr<move_base_trajectory::BaseGlobalPlannerTrajectory> globalPlanner() const;
 
     protected:
         bool loadGlobalPlanner(const std::string & globalPlannerName);

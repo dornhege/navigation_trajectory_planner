@@ -25,6 +25,7 @@ MoveBaseTrajectory::MoveBaseTrajectory(tf2_ros::Buffer & tf) : _tf(tf), _actionS
     ros::NodeHandle privateNh("~");
     _trajectoryPub = privateNh.advertise<moveit_msgs::DisplayTrajectory>("trajectory", 3);
     ais_rosparam_tools::checkAndLoadParameter(privateNh, "base_frame", _baseFrame, true);
+    _globalPlanner.globalPlanner()->setTfBuffer(&_tf);
 
     current_goal_pub_ = privateNh.advertise<geometry_msgs::PoseStamped>("global_goal", 0 );
     _actionServer->start();

@@ -12,6 +12,7 @@
 #include <moveit/planning_scene/planning_scene.h>
 #include <ros/ros.h>
 #include <navigation_trajectory_utils/primitives_file_io.h>
+#include <tf2_ros/buffer.h>
 
 #include <cstdio>
 #include <vector>
@@ -91,6 +92,8 @@ class EnvironmentNavXYThetaLatGeneric : public EnvironmentNAVXYTHETALAT
         virtual void resetTimingStats();
         virtual void printTimingStats();
 
+        void setTfBuffer(tf2_ros::Buffer* tf);
+
     protected:
         ros::NodeHandle nhPriv_;
 
@@ -98,6 +101,8 @@ class EnvironmentNavXYThetaLatGeneric : public EnvironmentNAVXYTHETALAT
 
         freespace_mechanism_heuristic::HeuristicCostMapPtr freespace_heuristic_costmap;
         bool useFreespaceHeuristic_;
+
+        tf2_ros::Buffer* _tf;
 
         Timing* timeFreespace;
         Timing* timeHeuristic;

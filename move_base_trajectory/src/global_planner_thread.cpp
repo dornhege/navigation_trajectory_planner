@@ -78,6 +78,11 @@ std::string GlobalPlannerThread::planningFrame() const
     return _globalPlanner->planningFrame();
 }
 
+const boost::shared_ptr<BaseGlobalPlannerTrajectory> GlobalPlannerThread::globalPlanner() const
+{
+    return _globalPlanner;
+}
+
 bool GlobalPlannerThread::loadGlobalPlanner(const std::string & globalPlannerName)
 {
     try {

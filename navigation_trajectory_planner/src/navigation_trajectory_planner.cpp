@@ -117,6 +117,7 @@ bool NavigationTrajectoryPlanner::createAndInitializeEnvironment()
         ROS_ERROR("SBPL encountered a fatal exception initializing the environment!");
         ret = false;
     }
+    env_->setTfBuffer(_tf);
     return ret;
 }
 

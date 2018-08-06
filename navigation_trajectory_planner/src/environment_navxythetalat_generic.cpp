@@ -101,6 +101,11 @@ bool EnvironmentNavXYThetaLatGeneric::InitializeEnv(int width, int height, const
             obsthresh, sMotPrimFile);
 }
 
+void EnvironmentNavXYThetaLatGeneric::setTfBuffer(tf2_ros::Buffer* tf)
+{
+    _tf = tf;
+}
+
 bool EnvironmentNavXYThetaLatGeneric::ReadMotionPrimitives(FILE* fMotPrim)
 {
 	char buf[1024];
