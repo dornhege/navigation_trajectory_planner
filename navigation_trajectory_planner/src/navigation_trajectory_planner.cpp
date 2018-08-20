@@ -328,6 +328,7 @@ bool NavigationTrajectoryPlanner::makeTrajectory(const geometry_msgs::PoseStampe
     dtraj = moveit_msgs::DisplayTrajectory();
     dtraj = env_->stateIDPathToDisplayTrajectory(solution_stateIDs);
     if(!dtraj.trajectory.empty()) {
+        // add the actual goal point to the trajectory
         ROS_ASSERT(dtraj.trajectory.size() == 1);
 
         trajectory_msgs::JointTrajectoryPoint point;

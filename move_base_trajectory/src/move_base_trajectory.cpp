@@ -185,6 +185,8 @@ MoveBaseTrajectory::GlobalTrajectoryComputationResult MoveBaseTrajectory::update
 {
     enum GlobalTrajectoryComputationResult result = GTCR_NO_TRAJECTORY;
     if(_globalPlanner.foundTrajectory()) {
+    // FIXME this is for avoiding that the robot starts moving when a first, but not the best plan was found. 
+//    if(_globalPlanner.foundTrajectory() && !_globalPlanner.isComputing()) {
         moveit_msgs::DisplayTrajectory dtraj;
         if(_globalPlanner.getBestTrajectory(dtraj)) {
             //ROS_INFO("got a trajectory from global planner.");
