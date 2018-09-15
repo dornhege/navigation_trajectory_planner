@@ -43,8 +43,8 @@ const std::vector<int> * XYThetaStateChangeQuery::getSuccessors() const
 NavigationTrajectoryPlanner::NavigationTrajectoryPlanner() :
     initialized_(false), 
     initial_epsilon_(0),
-    env_(NULL), force_scratch_limit_(0), planner_(NULL), allocated_time_(0),
-    found_prefix_(false)
+    env_(NULL), force_scratch_limit_(0), planner_(NULL), allocated_time_(0)//,
+    //found_prefix_(false)
 {
 }
 
@@ -59,9 +59,9 @@ void NavigationTrajectoryPlanner::initialize(std::string name)
     ais_rosparam_tools::checkAndSubscribeParameterDefault(private_nh_, "allocated_time", &allocated_time_, 10.0);
     ais_rosparam_tools::checkAndSubscribeParameterDefault(private_nh_, "initial_epsilon", &initial_epsilon_, 3.0);
     ais_rosparam_tools::checkAndSubscribeParameterDefault(private_nh_, "force_scratch_limit", &force_scratch_limit_, 500);
-    ais_rosparam_tools::checkAndSubscribeParameterDefault(private_nh_,"prefix_dist", &prefix_dist_, 1.);
-    ais_rosparam_tools::checkAndSubscribeParameterDefault(private_nh_,"min_prefix_entries", &min_prefix_entries_, 30);
-    ais_rosparam_tools::checkAndSubscribeParameterDefault(private_nh_,"used_prefix_portion", &used_prefix_portion_, 1.);
+//    ais_rosparam_tools::checkAndSubscribeParameterDefault(private_nh_,"prefix_dist", &prefix_dist_, 1.);
+//    ais_rosparam_tools::checkAndSubscribeParameterDefault(private_nh_,"min_prefix_entries", &min_prefix_entries_, 30);
+//    ais_rosparam_tools::checkAndSubscribeParameterDefault(private_nh_,"used_prefix_portion", &used_prefix_portion_, 1.);
 
     if(!createAndInitializeEnvironment()) {
         ROS_FATAL("Environment creation or initialization failed!");
@@ -84,8 +84,8 @@ void NavigationTrajectoryPlanner::initialize(std::string name)
     pub_generation_map_ = private_nh_->advertise<nav_msgs::OccupancyGrid>("generation_map", 3, true);
     pub_expansion_first_map_ = private_nh_->advertise<nav_msgs::OccupancyGrid>("expansion_first_map", 3, true);
     pub_generation_first_map_ = private_nh_->advertise<nav_msgs::OccupancyGrid>("generation_first_map", 3, true);
-    pub_expansion_prefix_ = private_nh_->advertise<nav_msgs::Path>("expansion_prefix", 3, false);
-    pub_chosen_prefix_ = private_nh_->advertise<nav_msgs::Path>("chosen_prefix", 3, true);
+//    pub_expansion_prefix_ = private_nh_->advertise<nav_msgs::Path>("expansion_prefix", 3, false);
+//    pub_chosen_prefix_ = private_nh_->advertise<nav_msgs::Path>("chosen_prefix", 3, true);
 
 //    srv_sample_poses_ = private_nh_->advertiseService("sample_valid_poses",
 //            &NavigationTrajectoryPlanner::sampleValidPoses, this);
@@ -138,7 +138,7 @@ bool NavigationTrajectoryPlanner::createPlanner()
         planner_ = new ARAPlanner(env_, forward_search);
         planner_->set_track_expansions(track_expansions);
         planner_->set_path_callback(boost::bind(&NavigationTrajectoryPlanner::rememberDisplayTrajectoryFromStateIdPath, this, _1, _2));
-        planner_->set_expanded_state_callback(boost::bind(&NavigationTrajectoryPlanner::handleNewExpandedStatePath, this, _1));
+        //planner_->set_expanded_state_callback(boost::bind(&NavigationTrajectoryPlanner::handleNewExpandedStatePath, this, _1));
     } else {
         ROS_ERROR("Unknown planner type: %s (supported: ARAPlanner)", planner_type.c_str());
         return false;
@@ -283,7 +283,7 @@ bool NavigationTrajectoryPlanner::updateForPlanRequest(const geometry_msgs::Pose
     ROS_DEBUG("allocated time: %.1f, initial eps: %.2f\n", allocated_time_, initial_epsilon_);
     planner_->set_initialsolution_eps(initial_epsilon_);
     planner_->set_search_mode(false);
-    found_prefix_ = false;
+//    found_prefix_ = false;
     
     planner_->reset_for_replan(allocated_time_);
 
@@ -563,7 +563,7 @@ bool NavigationTrajectoryPlanner::getCurrentBestTrajectory(moveit_msgs::DisplayT
     return false;
 }
 
-bool NavigationTrajectoryPlanner::foundPrefix() const
+/*bool NavigationTrajectoryPlanner::foundPrefix() const
 {
     return found_prefix_;
 }
@@ -581,7 +581,7 @@ bool NavigationTrajectoryPlanner::getCurrentBestPrefix(moveit_msgs::DisplayTraje
         return false;
     }
     return true;
-}
+}*/
 
 void NavigationTrajectoryPlanner::rememberDisplayTrajectoryFromStateIdPath(const std::vector<int> & path, const double cost)
 {
@@ -595,7 +595,7 @@ void NavigationTrajectoryPlanner::rememberDisplayTrajectoryFromStateIdPath(const
     current_best_cost_ = cost;
 }
 
-void NavigationTrajectoryPlanner::handleNewExpandedStatePath(const std::vector<int> & path)
+/*void NavigationTrajectoryPlanner::handleNewExpandedStatePath(const std::vector<int> & path)
 {
     if(!env_){
         ROS_ERROR("Environment is non existent!");
@@ -662,6 +662,6 @@ void NavigationTrajectoryPlanner::handleNewExpandedStatePath(const std::vector<i
             pub_chosen_prefix_.publish(visPath);
         }
     }
-}
+}*/
 
 }

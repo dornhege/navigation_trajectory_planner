@@ -30,13 +30,13 @@ bool GlobalPlannerThread::getBestTrajectory(moveit_msgs::DisplayTrajectory & tra
     return false;
 }
 
-bool GlobalPlannerThread::getBestPrefix(moveit_msgs::DisplayTrajectory & traj) const
+/*bool GlobalPlannerThread::getBestPrefix(moveit_msgs::DisplayTrajectory & traj) const
 {
     if(foundPrefix()){
         return _globalPlanner->getCurrentBestPrefix(traj);
     }
     return false;
-}
+}*/
 
 bool GlobalPlannerThread::isComputing() const
 {
@@ -61,10 +61,10 @@ bool GlobalPlannerThread::foundTrajectory() const
     return _globalPlanner->foundTrajectory();
 }
 
-bool GlobalPlannerThread::foundPrefix() const
+/*bool GlobalPlannerThread::foundPrefix() const
 {
     return _globalPlanner->foundPrefix();
-}
+}*/
 
 void GlobalPlannerThread::stopTrajectoryComputation()
 {

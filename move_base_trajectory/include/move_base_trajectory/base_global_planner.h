@@ -27,9 +27,9 @@ class BaseGlobalPlannerTrajectory
       virtual std::string planningFrame() const = 0;
 
       virtual bool foundTrajectory() const = 0;
-      virtual bool foundPrefix() const = 0;
+//      virtual bool foundPrefix() const = 0;
       virtual bool getCurrentBestTrajectory(moveit_msgs::DisplayTrajectory & dtraj) const = 0;
-      virtual bool getCurrentBestPrefix(moveit_msgs::DisplayTrajectory & dtraj) const = 0;
+//      virtual bool getCurrentBestPrefix(moveit_msgs::DisplayTrajectory & dtraj) const = 0;
       void setTfBuffer(tf2_ros::Buffer* tf);
     protected:
       tf2_ros::Buffer* _tf;

@@ -58,10 +58,10 @@ public:
     virtual void readDynamicParameters();
 
     virtual bool foundTrajectory() const;
-    virtual bool foundPrefix() const;
+//    virtual bool foundPrefix() const;
 
     virtual bool getCurrentBestTrajectory(moveit_msgs::DisplayTrajectory & dtraj) const;
-    virtual bool getCurrentBestPrefix(moveit_msgs::DisplayTrajectory & dtraj) const;
+//    virtual bool getCurrentBestPrefix(moveit_msgs::DisplayTrajectory & dtraj) const;
 protected:
     //virtual bool sampleValidPoses(navigation_trajectory_msgs::SampleValidPoses::Request & req, navigation_trajectory_msgs::SampleValidPoses::Response & resp);
 
@@ -87,7 +87,7 @@ protected:
 
     virtual void fillGrid(nav_msgs::OccupancyGrid & grid, const std::vector< std::set<int> > & gridDirections, int maxDirections);
     void rememberDisplayTrajectoryFromStateIdPath(const std::vector<int> & path, const double cost);
-    void handleNewExpandedStatePath(const std::vector<int> & path);
+//    void handleNewExpandedStatePath(const std::vector<int> & path);
 protected:
     bool initialized_;
     ros::NodeHandle* private_nh_;
@@ -98,16 +98,16 @@ protected:
     double allocated_time_;
     double initial_epsilon_;
     int force_scratch_limit_;   ///< if the number of changed cells is >= this, planning from scratch will happen
-    double prefix_dist_;
+/*    double prefix_dist_;
     int min_prefix_entries_;
     double used_prefix_portion_;
-    bool found_prefix_;
+    bool found_prefix_;*/
 
     moveit_msgs::DisplayTrajectory current_best_trajectory_;
-    moveit_msgs::DisplayTrajectory current_best_prefix_;
+//    moveit_msgs::DisplayTrajectory current_best_prefix_;
     double current_best_cost_;
     mutable boost::mutex trajectory_mutex_; // locks current_best_trajectory_ and current_best_cost_
-    mutable boost::mutex prefix_mutex_; // locks current_best_prefix_
+//    mutable boost::mutex prefix_mutex_; // locks current_best_prefix_
 
     ros::Publisher plan_pub_;
     ros::Publisher traj_pub_;
@@ -119,8 +119,8 @@ protected:
     ros::Publisher pub_generation_map_;
     ros::Publisher pub_expansion_first_map_;
     ros::Publisher pub_generation_first_map_;
-    ros::Publisher pub_expansion_prefix_;
-    ros::Publisher pub_chosen_prefix_;
+//    ros::Publisher pub_expansion_prefix_;
+//    ros::Publisher pub_chosen_prefix_;
 
 //    ros::ServiceServer srv_sample_poses_;
 };

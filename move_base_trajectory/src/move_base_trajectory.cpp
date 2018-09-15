@@ -197,15 +197,14 @@ MoveBaseTrajectory::GlobalTrajectoryComputationResult MoveBaseTrajectory::update
             ROS_INFO("got inconsistent behavior.");
             result = GTCR_INCONSISTENT;
         }
-    }else if(_globalPlanner.foundPrefix()){
+/*    }else if(_globalPlanner.foundPrefix()){
         moveit_msgs::DisplayTrajectory dtraj;
         if(_globalPlanner.getBestPrefix(dtraj)) {
             //ROS_INFO("got prefix from global planner");
             traj = dtraj.trajectory[0];
             result = GTCR_SUCCESS;
-        }       
+        }*/       
     }
-
     return result;
 }
 
