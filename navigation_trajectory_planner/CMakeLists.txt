@@ -6,6 +6,7 @@ project(navigation_trajectory_planner)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   ais_rosparam_tools
+  ais_tf_tools
   angles
   color_tools_ros
   freespace_mechanism_heuristic
@@ -94,6 +95,7 @@ catkin_package(
   LIBRARIES navigation_trajectory_planner
   CATKIN_DEPENDS 
     ais_rosparam_tools
+    ais_tf_tools
     angles
     color_tools_ros
     freespace_mechanism_heuristic

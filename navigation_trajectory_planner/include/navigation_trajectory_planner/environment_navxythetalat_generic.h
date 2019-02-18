@@ -52,7 +52,6 @@ class EnvironmentNavXYThetaLatGeneric : public EnvironmentNAVXYTHETALAT
         const SBPLGridConverter* converter() const;
 
         /// Transform a pose in any frame by a suitable method to the planning frame.
-        virtual bool transformPoseToPlanningFrame(geometry_msgs::PoseStamped & pose) = 0;
 
         /// Return a pose in the planning frame for stateID.
         virtual geometry_msgs::Pose poseFromStateID(int stateID) const = 0;

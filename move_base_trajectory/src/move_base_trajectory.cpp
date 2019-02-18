@@ -29,7 +29,7 @@ MoveBaseTrajectory::MoveBaseTrajectory(tf2_ros::Buffer & tf) : _tf(tf), _actionS
 
     current_goal_pub_ = privateNh.advertise<geometry_msgs::PoseStamped>("global_goal", 0 );
     _actionServer->start();
-    ROS_INFO("Planner is ready to receive goal.");
+    ROS_WARN("Planner is ready to receive goal.");
 }
 
 MoveBaseTrajectory::~MoveBaseTrajectory()

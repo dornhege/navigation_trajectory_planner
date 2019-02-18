@@ -18,8 +18,8 @@ class BaseGlobalPlannerTrajectory
       virtual ~BaseGlobalPlannerTrajectory(){}
 
       virtual void initialize(std::string name) = 0;
-      virtual bool updateForPlanRequest(const geometry_msgs::PoseStamped& start, 
-                                  const geometry_msgs::PoseStamped& goal) = 0;
+      virtual bool updateForPlanRequest(geometry_msgs::PoseStamped& start, 
+                                        geometry_msgs::PoseStamped& goal) = 0;
       virtual bool makeTrajectory(const geometry_msgs::PoseStamped& startPose,
                                   const geometry_msgs::PoseStamped& goalPose, 
                                   moveit_msgs::DisplayTrajectory & traj) = 0;

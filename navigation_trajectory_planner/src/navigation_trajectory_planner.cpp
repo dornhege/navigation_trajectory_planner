@@ -2,6 +2,8 @@
 #include "color_tools_ros/color_tools_ros.h"
 #include "navigation_trajectory_msgs/PlannerStats.h"
 #include <ais_rosparam_tools/load_ros_parameters.h>
+#include <ais_tf_tools/eigen_from_tf.h>
+#include <eigen_conversions/eigen_msg.h>
 
 #include <sbpl/planners/planner.h>
 #include <nav_msgs/Path.h>
@@ -211,8 +213,8 @@ void NavigationTrajectoryPlanner::publishStats(int solution_cost, int solution_s
 }
 */
 
-bool NavigationTrajectoryPlanner::updateForPlanRequest(const geometry_msgs::PoseStamped& startPose,
-        const geometry_msgs::PoseStamped& goalPose)
+bool NavigationTrajectoryPlanner::updateForPlanRequest(geometry_msgs::PoseStamped& start,
+                                                       geometry_msgs::PoseStamped& goal)
 {
     readDynamicParameters();
     if(force_scratch_limit_ == -1) {
@@ -234,13 +236,11 @@ bool NavigationTrajectoryPlanner::updateForPlanRequest(const geometry_msgs::Pose
 
     ROS_INFO("Planning frame is %s", planningFrame().c_str());
 
-    geometry_msgs::PoseStamped start = startPose;
-    if(!env_->transformPoseToPlanningFrame(start)) {
+    if(!transformPoseToPlanningFrame(start)) {
         ROS_ERROR("Unable to transform start pose into planning frame");
         return false;
     }
-    geometry_msgs::PoseStamped goal = goalPose;
-    if(!env_->transformPoseToPlanningFrame(goal)) {
+    if(!transformPoseToPlanningFrame(goal)) {
         ROS_ERROR("Unable to transform goal pose into planning frame");
         return false;
     }
@@ -290,8 +290,8 @@ bool NavigationTrajectoryPlanner::updateForPlanRequest(const geometry_msgs::Pose
     return true;
 }
 
-bool NavigationTrajectoryPlanner::makeTrajectory(const geometry_msgs::PoseStamped& start,
-                                                 const geometry_msgs::PoseStamped& goal, 
+bool NavigationTrajectoryPlanner::makeTrajectory(const geometry_msgs::PoseStamped& startPose,
+                                                 const geometry_msgs::PoseStamped& goalPose, 
                                                  moveit_msgs::DisplayTrajectory & dtraj)
 {
     if(!initialized_) {
@@ -299,6 +299,17 @@ bool NavigationTrajectoryPlanner::makeTrajectory(const geometry_msgs::PoseStampe
         return false;
     }
     ROS_INFO("making trajectory in navigation trajectory planner");
+
+    geometry_msgs::PoseStamped start = startPose;
+    if(!transformPoseToPlanningFrame(start)) {
+        ROS_ERROR_STREAM(__func__ << ": Unable to transform start pose into planning frame");
+        return false;
+    }
+    geometry_msgs::PoseStamped goal = goalPose;
+    if(!transformPoseToPlanningFrame(goal)) {
+        ROS_ERROR_STREAM(__func__ << ": Unable to transform goal pose into planning frame");
+        return false;
+    }
 
     ROS_DEBUG("Running planner");
     std::vector<int> solution_stateIDs;
@@ -593,6 +604,24 @@ void NavigationTrajectoryPlanner::rememberDisplayTrajectoryFromStateIdPath(const
     }
 
     current_best_cost_ = cost;
+}
+
+bool NavigationTrajectoryPlanner::transformPoseToPlanningFrame(geometry_msgs::PoseStamped & poseMsg){
+    if(poseMsg.header.frame_id == planningFrame()){
+        return true;
+    }
+    Eigen::Affine3d poseFrameToPlanningFrame = Eigen::Affine3d::Identity();
+    if(!ais_tf_tools::getAffineFromTf(_tf, planningFrame(), poseMsg.header.frame_id, poseMsg.header.stamp, poseFrameToPlanningFrame,
+                                      NULL, NULL, NULL, ros::Duration(0.5))) {
+        ROS_ERROR_STREAM("Could not transform pose from frame " << poseMsg.header.frame_id << " to frame " << planningFrame() << "!");
+        return false;
+    }
+    Eigen::Affine3d pose = Eigen::Affine3d::Identity();
+    tf::poseMsgToEigen(poseMsg.pose, pose);
+    pose = poseFrameToPlanningFrame*pose;
+    tf::poseEigenToMsg(pose, poseMsg.pose);
+    poseMsg.header.frame_id = planningFrame();
+    return true;
 }
 
 /*void NavigationTrajectoryPlanner::handleNewExpandedStatePath(const std::vector<int> & path)

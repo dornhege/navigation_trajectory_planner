@@ -61,6 +61,8 @@ public:
 //    virtual bool foundPrefix() const;
 
     virtual bool getCurrentBestTrajectory(moveit_msgs::DisplayTrajectory & dtraj) const;
+
+    bool transformPoseToPlanningFrame(geometry_msgs::PoseStamped & poseMsg);
 //    virtual bool getCurrentBestPrefix(moveit_msgs::DisplayTrajectory & dtraj) const;
 protected:
     //virtual bool sampleValidPoses(navigation_trajectory_msgs::SampleValidPoses::Request & req, navigation_trajectory_msgs::SampleValidPoses::Response & resp);
@@ -77,7 +79,7 @@ protected:
             double trans_vel, double timeToTurn45Degs, const std::string & motion_primitive_filename) = 0;
 
     /// Update internal representation of the planner for a plan request.
-    virtual bool updateForPlanRequest(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal);
+    virtual bool updateForPlanRequest(geometry_msgs::PoseStamped& start, geometry_msgs::PoseStamped& goal);
 
     virtual void publishStats(int solution_cost, int solution_size, const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal);
     virtual void publish_expansions();

@@ -12,6 +12,7 @@ find_package(catkin REQUIRED
         cmake_modules
         diagnostics_simple
         dynamic_reconfigure
+        eigen_conversions
         geometry_msgs
         gps_reference
         message_generation
@@ -42,6 +43,7 @@ catkin_package(
         ais_ros_msg_conversions
         angles
         dynamic_reconfigure
+        eigen_conversions
         geometry_msgs
         pluginlib
         roscpp

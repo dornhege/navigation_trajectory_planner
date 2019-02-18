@@ -43,10 +43,12 @@ bool GlobalPlannerThread::isComputing() const
     return !_plannerThread.timed_join(boost::posix_time::seconds(0));
 }
 
-bool GlobalPlannerThread::computeTrajectory(const geometry_msgs::PoseStamped & start, const geometry_msgs::PoseStamped & goal)
+bool GlobalPlannerThread::computeTrajectory(const geometry_msgs::PoseStamped & startMsg, const geometry_msgs::PoseStamped & goalMsg)
 {
     // start thread, send goal to planner
     moveit_msgs::DisplayTrajectory trajectory; // TODO do we still need this in the global planner?
+    geometry_msgs::PoseStamped start = startMsg;
+    geometry_msgs::PoseStamped goal = goalMsg;
     // TODO check that no thread is running
     if(!_globalPlanner->updateForPlanRequest(start, goal)){
         ROS_WARN("Could not update planner for new request.");

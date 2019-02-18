@@ -41,6 +41,7 @@
   <!--   <test_depend>gtest</test_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>ais_rosparam_tools</build_depend>
+  <build_depend>ais_tf_tools</build_depend>
   <build_depend>angles</build_depend>
   <build_depend>color_tools_ros</build_depend>
   <build_depend>freespace_mechanism_heuristic</build_depend>
@@ -59,6 +60,7 @@
   <build_depend>navigation_trajectory_utils</build_depend>
 
   <run_depend>ais_rosparam_tools</run_depend>
+  <run_depend>ais_tf_tools</run_depend>
   <run_depend>angles</run_depend>
   <run_depend>color_tools_ros</run_depend>
   <run_depend>freespace_mechanism_heuristic</run_depend>
