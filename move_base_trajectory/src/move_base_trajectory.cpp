@@ -3,8 +3,10 @@
 #include <angles/angles.h>
 #include <ais_rosparam_tools/load_ros_parameters.h>
 #include <ais_ros_msg_conversions/tf_msg_conversions.h>
+#include <eigen_conversions/eigen_msg.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf/tf.h>
+#include <ais_tf_tools/eigen_from_tf.h>
 
 namespace move_base_trajectory
 {
@@ -57,6 +59,22 @@ void MoveBaseTrajectory::executeCallback(const geometry_msgs::PoseStamped& targe
                     << " (" << target_pose.header.stamp.toSec() << ")");
     _diagnostics.sendMessage("New goal");
 
+	// transform target pose into planning frame
+    geometry_msgs::PoseStamped transformedTargetPose = target_pose;
+    if(target_pose.header.frame_id != _globalPlanner.planningFrame()){
+        Eigen::Affine3d goalToPlanningFrameTransform = Eigen::Affine3d::Identity();
+        if(!ais_tf_tools::getAffineFromTf(&_tf, _globalPlanner.planningFrame(), target_pose.header.frame_id, target_pose.header.stamp,
+                                          goalToPlanningFrameTransform, NULL, NULL, NULL, ros::Duration(1.5))){
+            ROS_ERROR("Could not transform goal pose to planning frame. Ignoring goal!");
+            return;
+        }
+        Eigen::Affine3d goal;
+        tf::poseMsgToEigen(target_pose.pose, goal);
+        goal = goalToPlanningFrameTransform*goal;
+        tf::poseEigenToMsg(goal, transformedTargetPose.pose);
+        transformedTargetPose.header.frame_id = _globalPlanner.planningFrame();
+    }
+
     ros::Rate loopRate(20);
 
     bool trigger_replan = false;  // TODO move to function for timeouts/etc. or remove if not needed
@@ -81,7 +99,7 @@ void MoveBaseTrajectory::executeCallback(const geometry_msgs::PoseStamped& targe
   
             geometry_msgs::PoseStamped planningStartPose;
             ais_ros_msg_conversions::TransformToPose(planningStartTf, planningStartPose);
-            if(!startTrajectoryComputation(planningStartPose, target_pose)){
+            if(!startTrajectoryComputation(planningStartPose, transformedTargetPose)){
                 _actionServer->setAborted(bonirob_navigation_msgs::MoveBaseGeoPoseResult(), "Trajectory computation could not be started. Maybe the start or goal state are in collision.");
                 _diagnostics.sendMessage("Cannot start planning", 2);
                 ROS_ERROR("Starting the trajectory computation failed.");

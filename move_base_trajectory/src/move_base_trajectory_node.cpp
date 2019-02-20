@@ -9,27 +9,12 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <move_base_msgs/MoveBaseActionGoal.h>
 
+#include <ais_tf_tools/eigen_from_tf.h>
 #include "move_base_trajectory/move_base_trajectory.h"
 
 ros::Publisher goalPub;
 move_base_trajectory::MoveBaseTrajectory* moveBase;
 tf2_ros::Buffer* tfBuffer;
-
-bool getAffineFromTf(const std::string& frame_id, const std::string& child_id,
-                     const ros::Time& time,
-                     Eigen::Affine3d& affine,
-                     const ros::Duration& timeout=ros::Duration(0)){
-    geometry_msgs::TransformStamped transformMsg;
-    try{
-        transformMsg = tfBuffer->lookupTransform(frame_id, child_id, time, timeout);
-    }catch(tf2::TransformException ex){
-        ROS_WARN("%s",ex.what());
-        return false;
-    }
-    affine = tf2::transformToEigen(transformMsg).cast<double>();
-    return true;
-}
-
 
 void goalCallback(const geometry_msgs::PoseStamped& goalMsg)
 {
@@ -38,8 +23,8 @@ void goalCallback(const geometry_msgs::PoseStamped& goalMsg)
     mbGoal.header.stamp = ros::Time::now();
     if(goalMsg.header.frame_id != "gps_reference"){
         Eigen::Affine3d goalToGPSTransform = Eigen::Affine3d::Identity();
-        if(!getAffineFromTf("gps_reference", goalMsg.header.frame_id, goalMsg.header.stamp,
-                            goalToGPSTransform, ros::Duration(0.1))){
+        if(!ais_tf_tools::getAffineFromTf(tfBuffer, "gps_reference", goalMsg.header.frame_id, goalMsg.header.stamp,
+                                          goalToGPSTransform, NULL, NULL, NULL, ros::Duration(0.1))){
             ROS_ERROR("Could not transform goal pose to gps_reference frame. Ignoring goal!");
             return;
         }

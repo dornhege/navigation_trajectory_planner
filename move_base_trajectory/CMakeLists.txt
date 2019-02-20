@@ -7,6 +7,7 @@ find_package(catkin REQUIRED
         actionlib
         ais_rosparam_tools
         ais_ros_msg_conversions
+        ais_tf_tools
         angles
         bonirob_navigation_msgs
         cmake_modules
@@ -41,6 +42,7 @@ catkin_package(
         actionlib
         ais_rosparam_tools
         ais_ros_msg_conversions
+        ais_tf_tools
         angles
         dynamic_reconfigure
         eigen_conversions
