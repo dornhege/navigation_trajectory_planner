@@ -45,7 +45,9 @@ const std::vector<int> * XYThetaStateChangeQuery::getSuccessors() const
 NavigationTrajectoryPlanner::NavigationTrajectoryPlanner() :
     initialized_(false), 
     initial_epsilon_(0),
-    env_(NULL), force_scratch_limit_(0), planner_(NULL), allocated_time_(0)//,
+    env_(NULL), 
+    isComputing_(false),
+    force_scratch_limit_(0), planner_(NULL), allocated_time_(0)//,
     //found_prefix_(false)
 {
 }
@@ -294,8 +296,11 @@ bool NavigationTrajectoryPlanner::makeTrajectory(const geometry_msgs::PoseStampe
                                                  const geometry_msgs::PoseStamped& goalPose, 
                                                  moveit_msgs::DisplayTrajectory & dtraj)
 {
+    setIsComputing(true);
+
     if(!initialized_) {
         ROS_ERROR("Global planner is not initialized");
+        setIsComputing(false);
         return false;
     }
     ROS_INFO("making trajectory in navigation trajectory planner");
@@ -303,11 +308,13 @@ bool NavigationTrajectoryPlanner::makeTrajectory(const geometry_msgs::PoseStampe
     geometry_msgs::PoseStamped start = startPose;
     if(!transformPoseToPlanningFrame(start)) {
         ROS_ERROR_STREAM(__func__ << ": Unable to transform start pose into planning frame");
+        setIsComputing(false);
         return false;
     }
     geometry_msgs::PoseStamped goal = goalPose;
     if(!transformPoseToPlanningFrame(goal)) {
         ROS_ERROR_STREAM(__func__ << ": Unable to transform goal pose into planning frame");
+        setIsComputing(false);
         return false;
     }
 
@@ -325,10 +332,12 @@ bool NavigationTrajectoryPlanner::makeTrajectory(const geometry_msgs::PoseStampe
             publish_expansions();
             publish_expansion_map();
             publishStats(solution_cost, 0, start, goal);
+            setIsComputing(false);
             return false;
         }
     } catch (SBPL_Exception& e) {
         ROS_ERROR("SBPL encountered a fatal exception while planning");
+        setIsComputing(false);
         return false;
     }
 
@@ -360,6 +369,7 @@ bool NavigationTrajectoryPlanner::makeTrajectory(const geometry_msgs::PoseStampe
     }
     publish_expansions();
     publish_expansion_map();
+    setIsComputing(false);
     return true;
 }
 
@@ -622,6 +632,18 @@ bool NavigationTrajectoryPlanner::transformPoseToPlanningFrame(geometry_msgs::Po
     tf::poseEigenToMsg(pose, poseMsg.pose);
     poseMsg.header.frame_id = planningFrame();
     return true;
+}
+
+bool NavigationTrajectoryPlanner::isComputing() const
+{
+    boost::mutex::scoped_lock lock(is_computing_mutex_);
+    return isComputing_;
+}
+
+void NavigationTrajectoryPlanner::setIsComputing(bool isComputing) 
+{
+    boost::mutex::scoped_lock lock(is_computing_mutex_);
+    isComputing_ = isComputing;
 }
 
 /*void NavigationTrajectoryPlanner::handleNewExpandedStatePath(const std::vector<int> & path)

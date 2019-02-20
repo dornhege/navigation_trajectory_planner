@@ -31,6 +31,7 @@ class BaseGlobalPlannerTrajectory
       virtual bool getCurrentBestTrajectory(moveit_msgs::DisplayTrajectory & dtraj) const = 0;
 //      virtual bool getCurrentBestPrefix(moveit_msgs::DisplayTrajectory & dtraj) const = 0;
       void setTfBuffer(tf2_ros::Buffer* tf);
+      virtual bool isComputing() const = 0;
     protected:
       tf2_ros::Buffer* _tf;
 };

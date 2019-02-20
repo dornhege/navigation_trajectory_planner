@@ -168,7 +168,15 @@ after_loop:
 bool MoveBaseTrajectory::startTrajectoryComputation(const geometry_msgs::PoseStamped & start, const geometry_msgs::PoseStamped & goal)
 {
     ROS_INFO("starting trajectory computation in MoveBaseTrajectory");
-    return _globalPlanner.computeTrajectory(start, goal);
+    if(!_globalPlanner.computeTrajectory(start, goal)){
+        return false;
+    }
+    ROS_INFO("Waiting for planner to start computation");
+    while(!_globalPlanner.isComputing()){
+        usleep(10*1000);
+    }
+    ROS_INFO("Planner started computation.");
+    return true;
 }
 
 MoveBaseTrajectory::GlobalTrajectoryComputationResult MoveBaseTrajectory::updateGlobalTrajectory(moveit_msgs::RobotTrajectory & traj)
@@ -176,6 +184,7 @@ MoveBaseTrajectory::GlobalTrajectoryComputationResult MoveBaseTrajectory::update
     enum GlobalTrajectoryComputationResult result = GTCR_NO_TRAJECTORY;
 
     if(!_globalPlanner.isComputing() && !_globalPlanner.foundTrajectory()){
+        ROS_WARN("No trajectory found, but computation is finished.");
         //_actionServer->setPreempted();
         //_actionServer->setAborted(bonirob_navigation_msgs::MoveBaseGeoPoseResult(), "Trajectory for local planner could not be set.");
         return result;
@@ -192,20 +201,20 @@ MoveBaseTrajectory::GlobalTrajectoryComputationResult MoveBaseTrajectory::update
         }
         result = updateTrajectoryFromPlanner(traj);
         if(result == GTCR_SUCCESS || result == GTCR_INCONSISTENT){
+            ROS_INFO("found a trajectory or got inconsistent behavior.");
             break;
         }
         usleep(10*1000);
     }
-    
+    ROS_WARN("Global Planner finished.");
     return updateTrajectoryFromPlanner(traj);
 }
 
 MoveBaseTrajectory::GlobalTrajectoryComputationResult MoveBaseTrajectory::updateTrajectoryFromPlanner(moveit_msgs::RobotTrajectory& traj)
 {
     enum GlobalTrajectoryComputationResult result = GTCR_NO_TRAJECTORY;
-    if(_globalPlanner.foundTrajectory()) {
-    // FIXME this is for avoiding that the robot starts moving when a first, but not the best plan was found. 
-//    if(_globalPlanner.foundTrajectory() && !_globalPlanner.isComputing()) {
+    if(_globalPlanner.foundTrajectory() && !_globalPlanner.isComputing()) {
+        ROS_INFO("Finished planning and found plan");
         moveit_msgs::DisplayTrajectory dtraj;
         if(_globalPlanner.getBestTrajectory(dtraj)) {
             //ROS_INFO("got a trajectory from global planner.");
@@ -213,7 +222,7 @@ MoveBaseTrajectory::GlobalTrajectoryComputationResult MoveBaseTrajectory::update
             traj = dtraj.trajectory[0];
             result = GTCR_SUCCESS;
         } else {
-            ROS_INFO("got inconsistent behavior.");
+            ROS_INFO("Got inconsistent behavior.");
             result = GTCR_INCONSISTENT;
         }
 /*    }else if(_globalPlanner.foundPrefix()){
@@ -224,6 +233,7 @@ MoveBaseTrajectory::GlobalTrajectoryComputationResult MoveBaseTrajectory::update
             result = GTCR_SUCCESS;
         }*/       
     }
+
     return result;
 }
 

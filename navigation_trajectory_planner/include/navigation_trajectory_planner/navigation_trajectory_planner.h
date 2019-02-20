@@ -90,13 +90,19 @@ protected:
     virtual void fillGrid(nav_msgs::OccupancyGrid & grid, const std::vector< std::set<int> > & gridDirections, int maxDirections);
     void rememberDisplayTrajectoryFromStateIdPath(const std::vector<int> & path, const double cost);
 //    void handleNewExpandedStatePath(const std::vector<int> & path);
+
+    virtual bool isComputing() const;
+
 protected:
+    void setIsComputing(bool isComputing);
+
     bool initialized_;
     ros::NodeHandle* private_nh_;
 
     ARAPlanner* planner_;
     EnvironmentNavXYThetaLatGeneric* env_;
 
+    bool isComputing_;
     double allocated_time_;
     double initial_epsilon_;
     int force_scratch_limit_;   ///< if the number of changed cells is >= this, planning from scratch will happen
@@ -109,6 +115,7 @@ protected:
 //    moveit_msgs::DisplayTrajectory current_best_prefix_;
     double current_best_cost_;
     mutable boost::mutex trajectory_mutex_; // locks current_best_trajectory_ and current_best_cost_
+    mutable boost::mutex is_computing_mutex_;
 //    mutable boost::mutex prefix_mutex_; // locks current_best_prefix_
 
     ros::Publisher plan_pub_;

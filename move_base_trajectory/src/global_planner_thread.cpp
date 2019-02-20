@@ -40,7 +40,7 @@ bool GlobalPlannerThread::getBestTrajectory(moveit_msgs::DisplayTrajectory & tra
 
 bool GlobalPlannerThread::isComputing() const
 {
-    return !_plannerThread.timed_join(boost::posix_time::seconds(0));
+    return _globalPlanner->isComputing();
 }
 
 bool GlobalPlannerThread::computeTrajectory(const geometry_msgs::PoseStamped & startMsg, const geometry_msgs::PoseStamped & goalMsg)
