@@ -279,7 +279,8 @@ moveit_msgs::DisplayTrajectory EnvironmentNavXYThetaLatGeneric::stateIDPathToDis
 
     moveit::core::robotStateToRobotStateMsg(getPlanningScene()->getCurrentState(), dtraj.trajectory_start);
     moveit_msgs::RobotTrajectory traj;
-    traj.multi_dof_joint_trajectory.header.frame_id = getPlanningFrame();
+    traj.multi_dof_joint_trajectory.header.frame_id = getPlanningFrame(); 
+    traj.multi_dof_joint_trajectory.header.stamp = ros::Time::now();
     traj.multi_dof_joint_trajectory.joint_names.push_back("world_joint");
     tf::Transform lastPose;
     for(unsigned int i = 0; i < path.size(); ++i) {
