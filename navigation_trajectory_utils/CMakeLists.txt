@@ -4,11 +4,13 @@ project(navigation_trajectory_utils)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED)
+find_package(catkin REQUIRED COMPONENTS roscpp)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
-find_package(sbpl REQUIRED)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(SBPL REQUIRED sbpl)
+#find_package(sbpl REQUIRED)
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -97,7 +99,7 @@ find_package(sbpl REQUIRED)
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  INCLUDE_DIRS include
+  INCLUDE_DIRS include ${sbpl_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS}
   LIBRARIES navigation_trajectory_utils
 #  CATKIN_DEPENDS other_catkin_pkg
   DEPENDS sbpl
@@ -111,9 +113,9 @@ catkin_package(
 ## Your package locations should be listed before other locations
 # include_directories(include)
 # TODO: Check names of system library include directories (sbpl)
-include_directories(include)
-include_directories(
+include_directories(include
   ${sbpl_INCLUDE_DIRS}
+  ${catkin_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
