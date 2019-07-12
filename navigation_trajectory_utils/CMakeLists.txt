@@ -10,6 +10,9 @@ find_package(catkin REQUIRED COMPONENTS roscpp)
 # find_package(Boost REQUIRED COMPONENTS system)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(SBPL REQUIRED sbpl)
+include_directories(${SBPL_INCLUDE_DIRS})
+link_directories(${SBPL_LIBRARY_DIRS})
+        
 #find_package(sbpl REQUIRED)
 
 

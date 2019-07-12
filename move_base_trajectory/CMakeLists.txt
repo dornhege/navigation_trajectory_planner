@@ -26,8 +26,8 @@ find_package(catkin REQUIRED
         tf2_ros
         tf2_geometry_msgs
 )
-find_package(Eigen REQUIRED)
-add_definitions(${EIGEN_DEFINITIONS})
+find_package(Eigen3 REQUIRED)
+#add_definitions(${EIGEN_DEFINITIONS})
 
 # dynamic reconfigure
 generate_dynamic_reconfigure_options(
@@ -58,7 +58,7 @@ catkin_package(
 include_directories(
     include
     ${catkin_INCLUDE_DIRS}
-    ${EIGEN_INCLUDE_DIRS}
+#    ${EIGEN_INCLUDE_DIRS}
 )
 
 # move_base
@@ -73,9 +73,10 @@ add_library(move_base_trajectory
   src/local_planner.cpp
 )
 target_link_libraries(move_base_trajectory
-    move_base_interfaces
-    ${Boost_LIBRARIES}
-    ${catkin_LIBRARIES})
+  move_base_interfaces
+  Eigen3::Eigen
+  ${Boost_LIBRARIES}
+  ${catkin_LIBRARIES})
 
 add_executable(move_base_trajectory_node
   src/move_base_trajectory_node.cpp
